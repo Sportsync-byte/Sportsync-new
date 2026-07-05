@@ -3,6 +3,7 @@ import { SOCKET_EVENTS } from '@sportsync/shared';
 import {
   startNetballMatch,
   recordGoal,
+  undoLastGoal,
   endQuarter,
   getNetballScoreboard,
 } from '@sportsync/sport-rules';
@@ -55,6 +56,13 @@ export function registerNetballHandlers(io: Server) {
       const doc = await MatchStateModel.findOne({ matchId });
       if (!doc || doc.sport !== 'indoor-netball') return;
       const state = endQuarter(doc.state as NetballMatchState);
+      await persistNetball(io, matchId, state, doc.venueId);
+    });
+
+    socket.on(SOCKET_EVENTS.NETBALL_UNDO, async (matchId: string) => {
+      const doc = await MatchStateModel.findOne({ matchId });
+      if (!doc || doc.sport !== 'indoor-netball') return;
+      const state = undoLastGoal(doc.state as NetballMatchState);
       await persistNetball(io, matchId, state, doc.venueId);
     });
 

@@ -1,19 +1,23 @@
 import { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { api, type PlayerStats } from '@sportsync/api-client';
-import type { Competition, Fixture, Team, LadderEntry, Player } from '@sportsync/shared';
+import type { Competition, Fixture, Team, LadderEntry, Player, Court } from '@sportsync/shared';
+
+const SCORER_URL = import.meta.env.VITE_SCORER_URL || 'http://localhost:5174';
 
 export function CompetitionDetailPage() {
   const { competitionId } = useParams<{ competitionId: string }>();
   const [competition, setCompetition] = useState<Competition | null>(null);
   const [fixtures, setFixtures] = useState<Fixture[]>([]);
   const [teams, setTeams] = useState<Team[]>([]);
+  const [courts, setCourts] = useState<Court[]>([]);
   const [ladder, setLadder] = useState<LadderEntry[]>([]);
   const [stats, setStats] = useState<PlayerStats[]>([]);
   const [players, setPlayers] = useState<Player[]>([]);
   const [tab, setTab] = useState<'fixtures' | 'ladder' | 'stats'>('fixtures');
 
   const teamMap = Object.fromEntries(teams.map((t) => [t.id, t.name]));
+  const courtMap = Object.fromEntries(courts.map((c) => [c.id, c.name]));
   const playerMap = Object.fromEntries(players.map((p) => [p.id, p.displayName]));
   const isNetball = competition?.sport === 'indoor-netball';
 
@@ -21,15 +25,17 @@ export function CompetitionDetailPage() {
     if (!competitionId) return;
     const comp = await api.competitions.get(competitionId);
     setCompetition(comp);
-    const [fix, teamList, ladderData, statsData, playerList] = await Promise.all([
+    const [fix, teamList, ladderData, statsData, playerList, courtList] = await Promise.all([
       api.competitions.fixtures(competitionId),
       api.teams.list(comp.venueId),
       api.competitions.ladder(competitionId),
       api.competitions.stats(competitionId),
       api.players.list(comp.venueId),
+      api.venues.courts(comp.venueId),
     ]);
     setFixtures(fix);
     setTeams(teamList);
+    setCourts(courtList);
     setLadder(ladderData);
     setStats(statsData);
     setPlayers(playerList);
@@ -48,7 +54,23 @@ export function CompetitionDetailPage() {
   const startMatch = async (fixtureId: string) => {
     await api.fixtures.start(fixtureId);
     load();
-    window.open('http://localhost:5174', '_blank');
+    window.open(SCORER_URL, '_blank');
+  };
+
+  const updateFixture = async (fixtureId: string, data: { courtId?: string; scheduledAt?: string }) => {
+    await api.fixtures.update(fixtureId, data);
+    load();
+  };
+
+  const formatSchedule = (iso?: string) => {
+    if (!iso) return '—';
+    return new Date(iso).toLocaleString(undefined, {
+      weekday: 'short',
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+    });
   };
 
   const downloadFile = async (path: string, filename: string) => {
@@ -96,6 +118,28 @@ export function CompetitionDetailPage() {
                 <div style={{ fontWeight: 600 }}>
                   {teamMap[f.homeTeamId] || f.homeTeamId} vs {teamMap[f.awayTeamId] || f.awayTeamId}
                 </div>
+                <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: '0.25rem' }}>
+                  {formatSchedule(f.scheduledAt)}
+                  {f.courtId ? ` · ${courtMap[f.courtId] || f.courtId}` : ''}
+                </div>
+                {f.status === 'scheduled' && courts.length > 0 && (
+                  <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.5rem', flexWrap: 'wrap' }}>
+                    <select
+                      value={f.courtId || ''}
+                      onChange={(e) => updateFixture(f.id, { courtId: e.target.value || undefined })}
+                      style={{ padding: '0.35rem 0.5rem', borderRadius: 6, border: '1px solid var(--border)', background: 'var(--bg)', color: 'var(--text)', fontSize: '0.8rem' }}
+                    >
+                      <option value="">No court</option>
+                      {courts.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
+                    </select>
+                    <input
+                      type="datetime-local"
+                      value={f.scheduledAt ? f.scheduledAt.slice(0, 16) : ''}
+                      onChange={(e) => updateFixture(f.id, { scheduledAt: e.target.value ? new Date(e.target.value).toISOString() : undefined })}
+                      style={{ padding: '0.35rem 0.5rem', borderRadius: 6, border: '1px solid var(--border)', background: 'var(--bg)', color: 'var(--text)', fontSize: '0.8rem' }}
+                    />
+                  </div>
+                )}
                 {f.status === 'completed' && (
                   <div style={{ fontSize: '0.85rem', marginTop: '0.25rem' }}>
                     {isNetball
@@ -113,7 +157,7 @@ export function CompetitionDetailPage() {
                   <button className="primary" onClick={() => startMatch(f.id)}>Start</button>
                 )}
                 {f.status === 'live' && (
-                  <a href={`http://localhost:5174?match=${f.matchId}`} target="_blank" rel="noreferrer">
+                  <a href={`${SCORER_URL}?match=${f.matchId}`} target="_blank" rel="noreferrer">
                     <button>Score</button>
                   </a>
                 )}

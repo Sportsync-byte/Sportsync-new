@@ -4,6 +4,7 @@ import { createMatch } from '@sportsync/sport-rules';
 import { CompetitionModel } from '../models/competition.js';
 import { FixtureModel } from '../models/fixture.js';
 import { MatchStateModel } from '../models/match-state.js';
+import { checkCourtConflict } from '../services/live.js';
 import { newId } from '../utils/id.js';
 
 export const fixturesRouter = Router();
@@ -27,15 +28,33 @@ fixturesRouter.get('/:fixtureId', async (req, res) => {
 });
 
 fixturesRouter.patch('/:fixtureId', async (req, res) => {
+  const existing = await FixtureModel.findOne({ id: req.params.fixtureId });
+  if (!existing) {
+    res.status(404).json({ error: 'Fixture not found' });
+    return;
+  }
+
+  const courtId = req.body.courtId ?? existing.courtId;
+  const scheduledAt = req.body.scheduledAt ?? existing.scheduledAt;
+
+  if (courtId && scheduledAt) {
+    const conflict = await checkCourtConflict(
+      existing.venueId,
+      courtId,
+      scheduledAt,
+      existing.id
+    );
+    if (conflict) {
+      res.status(409).json({ error: 'Another fixture is already scheduled on this court at that time' });
+      return;
+    }
+  }
+
   const fixture = await FixtureModel.findOneAndUpdate(
     { id: req.params.fixtureId },
     { $set: req.body },
     { new: true }
   );
-  if (!fixture) {
-    res.status(404).json({ error: 'Fixture not found' });
-    return;
-  }
   res.json(fixture);
 });
 

@@ -175,7 +175,9 @@ export interface LiveMatchSummary {
   fixtureId: string;
   venueId: string;
   competitionId: string;
+  sport: SportId;
   competitionName?: string;
+  courtId?: string;
   courtName?: string;
   homeTeamId: string;
   homeTeamName?: string;
@@ -183,11 +185,12 @@ export interface LiveMatchSummary {
   awayTeamName?: string;
   homeScore: number;
   awayScore: number;
-  homeWickets: number;
-  awayWickets: number;
+  homeWickets?: number;
+  awayWickets?: number;
   status: string;
   over?: number;
   ball?: number;
+  quarter?: number;
 }
 
 export interface LadderEntry {
@@ -218,6 +221,7 @@ export const SOCKET_EVENTS = {
   MATCH_TIMER: 'match:timer',
   MATCH_SETUP: 'match:setup',
   NETBALL_GOAL: 'netball:goal',
+  NETBALL_UNDO: 'netball:undo',
   NETBALL_START: 'netball:start',
   NETBALL_END_QUARTER: 'netball:end-quarter',
   NETBALL_TIMER: 'netball:timer',

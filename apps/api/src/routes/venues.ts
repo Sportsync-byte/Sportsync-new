@@ -72,5 +72,5 @@ venuesRouter.patch('/:venueId', authMiddleware, requireRole('admin', 'owner'), a
     res.status(404).json({ error: 'Venue not found' });
     return;
   }
-  res.json(venue);
+  res.json(enrichVenue(venue.toObject()));
 });

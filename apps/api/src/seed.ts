@@ -111,15 +111,19 @@ async function seed() {
     teams.map((t) => t.id),
     competitionId,
     'default',
-    { startDate: new Date().toISOString(), daysBetweenRounds: 7 }
+    {
+      startDate: new Date().toISOString(),
+      daysBetweenRounds: 7,
+      courtIds: courts.map((c) => c.id),
+      slotMinutes: 90,
+    }
   );
 
   await FixtureModel.insertMany(
-    generated.map((f, idx) => ({
+    generated.map((f) => ({
       ...f,
       id: newId(),
       venueId,
-      courtId: courts[idx % courts.length].id,
     }))
   );
 
@@ -151,14 +155,18 @@ async function seed() {
     netballTeams.map((t) => t.id),
     netballCompId,
     'default',
-    { startDate: new Date().toISOString(), daysBetweenRounds: 7 }
+    {
+      startDate: new Date().toISOString(),
+      daysBetweenRounds: 7,
+      courtIds: courts.map((c) => c.id),
+      slotMinutes: 90,
+    }
   );
   await FixtureModel.insertMany(
-    netballFixtures.map((f, idx) => ({
+    netballFixtures.map((f) => ({
       ...f,
       id: newId(),
       venueId,
-      courtId: courts[(idx + 2) % courts.length].id,
     }))
   );
   console.log(`Netball Competition ID: ${netballCompId}`);

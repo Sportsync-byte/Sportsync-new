@@ -44,6 +44,10 @@ export function useNetballSocket(matchId: string | null) {
     if (matchId) socketRef.current?.emit(SOCKET_EVENTS.NETBALL_END_QUARTER, matchId);
   }, [matchId]);
 
+  const undoLastGoal = useCallback(() => {
+    if (matchId) socketRef.current?.emit(SOCKET_EVENTS.NETBALL_UNDO, matchId);
+  }, [matchId]);
+
   const emitTimer = useCallback(
     (timerSeconds: number, timerRunning: boolean) => {
       if (matchId) {
@@ -53,5 +57,5 @@ export function useNetballSocket(matchId: string | null) {
     [matchId]
   );
 
-  return { connected, matchState, startMatch, recordGoal, endQuarter, emitTimer };
+  return { connected, matchState, startMatch, recordGoal, undoLastGoal, endQuarter, emitTimer };
 }

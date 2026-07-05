@@ -7,11 +7,12 @@ import { TimerBar } from '../components/TimerBar';
 
 export function NetballScoringPage() {
   const { matchId } = useParams<{ matchId: string }>();
-  const { connected, matchState, startMatch, recordGoal, endQuarter, emitTimer } = useNetballSocket(matchId ?? null);
+  const { connected, matchState, startMatch, recordGoal, undoLastGoal, endQuarter, emitTimer } = useNetballSocket(matchId ?? null);
   const [players, setPlayers] = useState<Player[]>([]);
   const [teamNames, setTeamNames] = useState<Record<string, string>>({});
   const [scoringTeam, setScoringTeam] = useState<'home' | 'away'>('home');
   const [selectedScorer, setSelectedScorer] = useState('');
+  const [selectedAssist, setSelectedAssist] = useState('');
 
   useEffect(() => {
     if (!matchId) return;
@@ -118,15 +119,27 @@ export function NetballScoringPage() {
             {teamPlayers.map((p) => <option key={p.id} value={p.id}>{p.displayName}</option>)}
           </select>
 
+          <select value={selectedAssist} onChange={(e) => setSelectedAssist(e.target.value)} style={{ padding: '0.75rem', borderRadius: 8, background: 'var(--surface)', color: 'var(--text)', border: '1px solid var(--border)' }}>
+            <option value="">Assist (optional)</option>
+            {teamPlayers.filter((p) => p.id !== selectedScorer).map((p) => (
+              <option key={p.id} value={p.id}>{p.displayName}</option>
+            ))}
+          </select>
+
           <button
             disabled={!selectedScorer}
             onClick={() => {
-              recordGoal(teamId, selectedScorer);
+              recordGoal(teamId, selectedScorer, selectedAssist || undefined);
               setSelectedScorer('');
+              setSelectedAssist('');
             }}
             style={{ padding: '1.5rem', fontSize: '1.5rem', fontWeight: 800, background: 'var(--accent)', color: '#0a0e12', borderRadius: 12, opacity: selectedScorer ? 1 : 0.4 }}
           >
             GOAL
+          </button>
+
+          <button onClick={undoLastGoal} style={{ padding: '1rem', background: 'var(--surface-elevated)', color: 'var(--text)', borderRadius: 8, border: '1px solid var(--border)' }}>
+            Undo Last Goal
           </button>
 
           <button onClick={endQuarter} style={{ padding: '1rem', background: 'var(--surface-elevated)', color: 'var(--text)', borderRadius: 8, border: '1px solid var(--border)' }}>

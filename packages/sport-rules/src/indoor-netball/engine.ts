@@ -57,6 +57,24 @@ export function endQuarter(state: NetballMatchState): NetballMatchState {
   return next;
 }
 
+export function undoLastGoal(state: NetballMatchState): NetballMatchState {
+  const next = structuredClone(state);
+  const goal = next.goalHistory.pop();
+  if (!goal) return next;
+
+  const isHome = goal.teamId === next.homeTeamId;
+  if (isHome) next.homeScore = Math.max(0, next.homeScore - 1);
+  else next.awayScore = Math.max(0, next.awayScore - 1);
+
+  const quarter = next.quarterScores.find((q) => q.quarter === goal.quarter);
+  if (quarter) {
+    if (isHome) quarter.homeGoals = Math.max(0, quarter.homeGoals - 1);
+    else quarter.awayGoals = Math.max(0, quarter.awayGoals - 1);
+  }
+
+  return next;
+}
+
 export function getNetballScoreboard(state: NetballMatchState) {
   return {
     homeTeamId: state.homeTeamId,

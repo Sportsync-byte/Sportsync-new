@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { api } from '@sportsync/api-client';
 import type { Competition, LiveMatchSummary } from '@sportsync/shared';
 import { useVenue } from '../context/VenueContext';
+import { formatLiveScore } from '../components/LiveScoreCard';
 
 export function DashboardHome() {
   const { venue, loading } = useVenue();
@@ -44,19 +45,28 @@ export function DashboardHome() {
 
       {liveMatches.length > 0 && (
         <section style={{ marginTop: '2rem' }}>
-          <h2 style={{ fontSize: '1.1rem', marginBottom: '1rem' }}>Live Now</h2>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+            <h2 style={{ fontSize: '1.1rem' }}>Live Now</h2>
+            <Link to="/courts" style={{ fontSize: '0.85rem' }}>Multi-court view →</Link>
+          </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-            {liveMatches.map((m) => (
-              <div key={m.matchId} className="card" style={{ display: 'flex', justifyContent: 'space-between' }}>
-                <div>
-                  <span className="badge live" style={{ marginRight: '0.5rem' }}>Live</span>
-                  {m.homeTeamName} vs {m.awayTeamName}
+            {liveMatches.map((m) => {
+              const scores = formatLiveScore(m);
+              return (
+                <div key={m.matchId} className="card" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <div>
+                    <span className="badge live" style={{ marginRight: '0.5rem' }}>Live</span>
+                    {m.homeTeamName} vs {m.awayTeamName}
+                    {m.courtName && (
+                      <span style={{ marginLeft: '0.5rem', fontSize: '0.8rem', color: 'var(--text-muted)' }}>
+                        · {m.courtName}
+                      </span>
+                    )}
+                  </div>
+                  <div style={{ fontWeight: 700 }}>{scores.home} – {scores.away}</div>
                 </div>
-                <div style={{ fontWeight: 700 }}>
-                  {m.homeScore}/{m.homeWickets} – {m.awayScore}/{m.awayWickets}
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </section>
       )}
@@ -67,7 +77,7 @@ export function DashboardHome() {
           <Link to="/competitions"><button className="primary">Manage Competitions</button></Link>
           <Link to="/teams"><button>Add Team</button></Link>
           <Link to="/live"><button>View Live Scores</button></Link>
-          <a href="http://localhost:5174" target="_blank" rel="noreferrer"><button>Open Scorer</button></a>
+          <Link to="/courts"><button>Multi-Court Live</button></Link>
         </div>
       </section>
     </div>

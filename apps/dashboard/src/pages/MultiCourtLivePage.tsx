@@ -4,27 +4,22 @@ import { api } from '@sportsync/api-client';
 import type { LiveMatchSummary } from '@sportsync/shared';
 import { SOCKET_EVENTS } from '@sportsync/shared';
 import { useVenue } from '../context/VenueContext';
-import { LiveScoreCard } from '../components/LiveScoreCard';
+import { LiveScoreCard, groupMatchesByCourt } from '../components/LiveScoreCard';
 
-export function LiveScoresPage() {
+export function MultiCourtLivePage() {
   const { venue } = useVenue();
   const [matches, setMatches] = useState<LiveMatchSummary[]>([]);
-  const [search, setSearch] = useState('');
 
   const load = () => {
     if (!venue) return;
-    api.live.search({
-      venueId: venue.id,
-      status: 'live',
-      ...(search ? { teamName: search } : {}),
-    }).then(setMatches);
+    api.live.search({ venueId: venue.id, status: 'live' }).then(setMatches);
   };
 
   useEffect(() => {
     load();
     const interval = setInterval(load, 15000);
     return () => clearInterval(interval);
-  }, [venue, search]);
+  }, [venue]);
 
   useEffect(() => {
     if (!venue) return;
@@ -37,39 +32,30 @@ export function LiveScoresPage() {
 
   if (!venue) return null;
 
+  const byCourt = groupMatchesByCourt(matches);
+
   return (
     <div>
-      <h1 style={{ fontSize: '1.75rem', marginBottom: '0.5rem' }}>Live Scores</h1>
+      <h1 style={{ fontSize: '1.75rem', marginBottom: '0.5rem' }}>Multi-Court Live</h1>
       <p style={{ color: 'var(--text-muted)', marginBottom: '1.5rem' }}>
-        No login required. Search by team name — updates automatically.
+        All live matches across {venue.courtCount} courts — updates in real time.
       </p>
-
-      <div className="card" style={{ marginBottom: '1.5rem' }}>
-        <input
-          type="search"
-          placeholder="Search team..."
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          style={{
-            width: '100%',
-            padding: '0.75rem 1rem',
-            borderRadius: 8,
-            border: '1px solid var(--border)',
-            background: 'var(--bg)',
-            color: 'var(--text)',
-            fontSize: '1rem',
-          }}
-        />
-      </div>
 
       {matches.length === 0 ? (
         <div className="card" style={{ textAlign: 'center', padding: '3rem', color: 'var(--text-muted)' }}>
-          No live matches right now.
+          No live matches on any court right now.
         </div>
       ) : (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-          {matches.map((m) => (
-            <LiveScoreCard key={m.matchId} match={m} />
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '1rem' }}>
+          {[...byCourt.entries()].map(([courtName, courtMatches]) => (
+            <div key={courtName}>
+              <h2 style={{ fontSize: '1rem', marginBottom: '0.75rem', color: 'var(--text-muted)' }}>{courtName}</h2>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                {courtMatches.map((m) => (
+                  <LiveScoreCard key={m.matchId} match={m} compact />
+                ))}
+              </div>
+            </div>
           ))}
         </div>
       )}

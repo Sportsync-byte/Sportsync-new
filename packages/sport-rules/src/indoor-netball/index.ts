@@ -1,6 +1,7 @@
 export {
   startNetballMatch,
   recordGoal,
+  undoLastGoal,
   endQuarter,
   getNetballScoreboard,
 } from './engine.js';

@@ -99,6 +99,10 @@ npm run dev:scorer      # Terminal 3 — http://localhost:5174
 - **Stripe subscription billing** with checkout and webhooks for Stadium tier upgrades
 - **Public player profile URLs** via unique slugs (`/p/:slug`)
 - **Subscription tiers** — Club vs Stadium limits enforced on competitions
+- **Sport-aware live scores** for cricket and netball
+- **Court scheduling** with automatic court/time assignment on fixture generation
+- **Multi-court live view** dashboard with real-time Socket.IO updates
+- **Netball scorer** assist picker and undo last goal
 - Real-time Socket.IO updates
 - Offline ball queue with sync on reconnect
 - Public live scores search (no login)
@@ -114,9 +118,8 @@ After running `npm run seed`:
 ## Roadmap
 
 - [ ] Additional sports modules (football, basketball)
-- [ ] Court scheduling and multi-court live view
-- [ ] Mobile app for scorers
 - [ ] Email notifications for fixture reminders
+- [ ] Mobile app / PWA for scorers
 
 ## License
 

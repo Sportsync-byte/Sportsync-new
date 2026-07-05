@@ -144,6 +144,8 @@ export const api = {
   fixtures: {
     list: (venueId: string, status?: string) =>
       request<Fixture[]>(`/fixtures/venue/${venueId}${status ? `?status=${status}` : ''}`),
+    update: (id: string, data: Partial<Fixture>) =>
+      request<Fixture>(`/fixtures/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
     start: (fixtureId: string) =>
       request<{ fixture: Fixture; match: unknown }>(`/fixtures/${fixtureId}/start`, {
         method: 'POST',

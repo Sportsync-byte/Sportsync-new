@@ -2,11 +2,20 @@ import type { Fixture } from './types.js';
 
 export type FixtureScheduleType = 'round-robin' | 'double-round-robin';
 
+export interface FixtureGenerationOptions {
+  doubleRoundRobin?: boolean;
+  startDate?: string;
+  daysBetweenRounds?: number;
+  courtIds?: string[];
+  /** Minutes between sequential matches on the same court */
+  slotMinutes?: number;
+}
+
 export function generateRoundRobinFixtures(
   teamIds: string[],
   competitionId: string,
   gradeId: string,
-  options?: { doubleRoundRobin?: boolean; startDate?: string; daysBetweenRounds?: number }
+  options?: FixtureGenerationOptions
 ): Omit<Fixture, 'id'>[] {
   if (teamIds.length < 2) return [];
 
@@ -22,8 +31,12 @@ export function generateRoundRobinFixtures(
 
   const baseDate = options?.startDate ? new Date(options.startDate) : new Date();
   const daysBetween = options?.daysBetweenRounds ?? 7;
+  const courtIds = options?.courtIds ?? [];
+  const slotMinutes = options?.slotMinutes ?? 90;
 
   for (let round = 0; round < rounds; round++) {
+    let matchInRound = 0;
+
     for (let i = 0; i < half; i++) {
       const home = rotation[i];
       const away = rotation[n - 1 - i];
@@ -32,6 +45,10 @@ export function generateRoundRobinFixtures(
       const scheduledAt = new Date(baseDate);
       scheduledAt.setDate(scheduledAt.getDate() + round * daysBetween);
 
+      const courtSlot = courtIds.length ? matchInRound % courtIds.length : 0;
+      const timeSlot = courtIds.length ? Math.floor(matchInRound / courtIds.length) : matchInRound;
+      scheduledAt.setMinutes(scheduledAt.getMinutes() + timeSlot * slotMinutes);
+
       fixtures.push({
         competitionId,
         gradeId,
@@ -39,8 +56,11 @@ export function generateRoundRobinFixtures(
         homeTeamId: home,
         awayTeamId: away,
         scheduledAt: scheduledAt.toISOString(),
+        courtId: courtIds[courtSlot],
         status: 'scheduled',
       });
+
+      matchInRound += 1;
     }
 
     const fixed = rotation[0];
@@ -52,8 +72,8 @@ export function generateRoundRobinFixtures(
   if (options?.doubleRoundRobin) {
     const returnFixtures = fixtures.map((f) => {
       const returnRound = rounds + f.round!;
-      const scheduledAt = new Date(baseDate);
-      scheduledAt.setDate(scheduledAt.getDate() + (returnRound - 1) * daysBetween);
+      const scheduledAt = new Date(f.scheduledAt || baseDate);
+      scheduledAt.setDate(scheduledAt.getDate() + rounds * daysBetween);
       return {
         ...f,
         round: returnRound,

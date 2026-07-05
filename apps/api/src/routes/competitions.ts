@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { generateRoundRobinFixtures } from '@sportsync/shared';
 import { CompetitionModel } from '../models/competition.js';
 import { FixtureModel } from '../models/fixture.js';
+import { CourtModel } from '../models/court.js';
 import { buildLadderFromFixtures } from '../services/ladder.js';
 import { checkCanAddCompetition, checkCanUseSport } from '../services/subscription.js';
 import { newId } from '../utils/id.js';
@@ -102,6 +103,9 @@ competitionsRouter.post('/:competitionId/generate-fixtures', async (req, res) =>
     status: 'scheduled',
   });
 
+  const courts = await CourtModel.find({ venueId: competition.venueId }).sort({ displayOrder: 1 });
+  const courtIds = courts.map((c) => c.id);
+
   const generated = generateRoundRobinFixtures(
     competition.teamIds,
     competition.id,
@@ -110,6 +114,8 @@ competitionsRouter.post('/:competitionId/generate-fixtures', async (req, res) =>
       doubleRoundRobin: competition.settings.doubleRoundRobin,
       startDate: req.body.startDate,
       daysBetweenRounds: req.body.daysBetweenRounds,
+      courtIds,
+      slotMinutes: req.body.slotMinutes ?? 90,
     }
   );
 

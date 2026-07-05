@@ -3,8 +3,16 @@ import { FixtureModel } from '../models/fixture.js';
 import { TeamModel } from '../models/team.js';
 import { CompetitionModel } from '../models/competition.js';
 import { CourtModel } from '../models/court.js';
-import { getScoreboardDisplay } from '@sportsync/sport-rules';
-import type { IndoorCricketMatchState, LiveMatchSummary } from '@sportsync/shared';
+import { getScoreboardDisplay, getNetballScoreboard } from '@sportsync/sport-rules';
+import type { IndoorCricketMatchState, NetballMatchState, LiveMatchSummary, SportId } from '@sportsync/shared';
+
+function isLiveMatchStatus(sport: string, status: string): boolean {
+  if (status === 'completed') return false;
+  if (sport === 'indoor-netball') {
+    return ['live', 'quarter-break', 'not-started'].includes(status);
+  }
+  return ['innings-1', 'innings-2', 'not-started'].includes(status);
+}
 
 export async function searchLiveMatches(query: {
   venueId?: string;
@@ -15,19 +23,20 @@ export async function searchLiveMatches(query: {
 }): Promise<LiveMatchSummary[]> {
   const matchFilter: Record<string, unknown> = {};
   if (query.venueId) matchFilter.venueId = query.venueId;
-  if (query.liveOnly) {
-    matchFilter['state.status'] = { $in: ['innings-1', 'innings-2', 'not-started'] };
-  }
 
   const matches = await MatchStateModel.find(matchFilter);
   const summaries: LiveMatchSummary[] = [];
 
   for (const doc of matches) {
-    const state = doc.state as IndoorCricketMatchState;
+    const sport = (doc.sport || 'indoor-cricket') as SportId;
     const fixture = await FixtureModel.findOne({ id: doc.fixtureId });
     if (!fixture) continue;
+    if (fixture.status === 'completed') continue;
     if (query.competitionId && fixture.competitionId !== query.competitionId) continue;
     if (query.courtId && fixture.courtId !== query.courtId) continue;
+
+    const state = doc.state as IndoorCricketMatchState | NetballMatchState;
+    if (query.liveOnly && !isLiveMatchStatus(sport, state.status)) continue;
 
     const [homeTeam, awayTeam, competition, court] = await Promise.all([
       TeamModel.findOne({ id: fixture.homeTeamId }),
@@ -43,28 +52,77 @@ export async function searchLiveMatches(query: {
       if (!homeMatch && !awayMatch) continue;
     }
 
-    const display = getScoreboardDisplay(state);
+    if (sport === 'indoor-netball') {
+      const netballState = state as NetballMatchState;
+      const display = getNetballScoreboard(netballState);
+      summaries.push({
+        matchId: doc.matchId,
+        fixtureId: doc.fixtureId,
+        venueId: doc.venueId,
+        competitionId: fixture.competitionId,
+        sport,
+        competitionName: competition?.name,
+        courtId: fixture.courtId ?? undefined,
+        courtName: court?.name,
+        homeTeamId: fixture.homeTeamId,
+        homeTeamName: homeTeam?.name,
+        awayTeamId: fixture.awayTeamId,
+        awayTeamName: awayTeam?.name,
+        homeScore: netballState.homeScore,
+        awayScore: netballState.awayScore,
+        status: netballState.status,
+        quarter: display.quarter,
+      });
+      continue;
+    }
+
+    const cricketState = state as IndoorCricketMatchState;
+    const display = getScoreboardDisplay(cricketState);
+    const homeInnings = cricketState.innings.find((i) => i.teamId === fixture.homeTeamId) ?? cricketState.innings[0];
+    const awayInnings = cricketState.innings.find((i) => i.teamId === fixture.awayTeamId) ?? cricketState.innings[1];
 
     summaries.push({
       matchId: doc.matchId,
       fixtureId: doc.fixtureId,
       venueId: doc.venueId,
       competitionId: fixture.competitionId,
+      sport,
       competitionName: competition?.name,
+      courtId: fixture.courtId ?? undefined,
       courtName: court?.name,
       homeTeamId: fixture.homeTeamId,
       homeTeamName: homeTeam?.name,
       awayTeamId: fixture.awayTeamId,
       awayTeamName: awayTeam?.name,
-      homeScore: state.innings[0].totalRuns,
-      awayScore: state.innings[1].totalRuns,
-      homeWickets: state.innings[0].wickets,
-      awayWickets: state.innings[1].wickets,
-      status: state.status,
+      homeScore: homeInnings.totalRuns,
+      awayScore: awayInnings.totalRuns,
+      homeWickets: homeInnings.wickets,
+      awayWickets: awayInnings.wickets,
+      status: cricketState.status,
       over: display.current.over,
       ball: display.current.ball,
     });
   }
 
-  return summaries;
+  return summaries.sort((a, b) => {
+    const courtA = a.courtName || 'zzz';
+    const courtB = b.courtName || 'zzz';
+    return courtA.localeCompare(courtB);
+  });
+}
+
+export async function checkCourtConflict(
+  venueId: string,
+  courtId: string,
+  scheduledAt: string,
+  excludeFixtureId?: string
+): Promise<boolean> {
+  const conflict = await FixtureModel.findOne({
+    venueId,
+    courtId,
+    scheduledAt,
+    status: { $in: ['scheduled', 'live'] },
+    ...(excludeFixtureId ? { id: { $ne: excludeFixtureId } } : {}),
+  });
+  return Boolean(conflict);
 }
