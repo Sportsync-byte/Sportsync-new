@@ -1,8 +1,12 @@
 import { Router } from 'express';
 import { TeamModel } from '../models/team.js';
 import { newId } from '../utils/id.js';
+import { authMiddleware, requireRole, type AuthRequest } from '../middleware/auth.js';
+import { requireTeamAccess, requireUserVenue } from '../middleware/venue-scope.js';
 
 export const teamsRouter = Router();
+
+const manageRoles = [authMiddleware, requireRole('owner', 'admin', 'competition-manager')];
 
 teamsRouter.get('/venue/:venueId', async (req, res) => {
   const teams = await TeamModel.find({ venueId: req.params.venueId }).sort({ name: 1 });
@@ -18,12 +22,13 @@ teamsRouter.get('/:teamId', async (req, res) => {
   res.json(team);
 });
 
-teamsRouter.post('/', async (req, res) => {
+teamsRouter.post('/', ...manageRoles, async (req: AuthRequest, res) => {
   const { venueId, name, shortName, colors, logoUrl, captainId, coachId } = req.body;
   if (!venueId || !name) {
     res.status(400).json({ error: 'venueId and name are required' });
     return;
   }
+  if (!requireUserVenue(req, res, venueId)) return;
 
   const team = await TeamModel.create({
     id: newId(),
@@ -38,7 +43,8 @@ teamsRouter.post('/', async (req, res) => {
   res.status(201).json(team);
 });
 
-teamsRouter.patch('/:teamId', async (req, res) => {
+teamsRouter.patch('/:teamId', ...manageRoles, async (req: AuthRequest, res) => {
+  if (!(await requireTeamAccess(req, res, String(req.params.teamId)))) return;
   const team = await TeamModel.findOneAndUpdate(
     { id: req.params.teamId },
     { $set: req.body },
@@ -51,7 +57,8 @@ teamsRouter.patch('/:teamId', async (req, res) => {
   res.json(team);
 });
 
-teamsRouter.delete('/:teamId', async (req, res) => {
+teamsRouter.delete('/:teamId', ...manageRoles, async (req: AuthRequest, res) => {
+  if (!(await requireTeamAccess(req, res, String(req.params.teamId)))) return;
   const result = await TeamModel.deleteOne({ id: req.params.teamId });
   if (result.deletedCount === 0) {
     res.status(404).json({ error: 'Team not found' });

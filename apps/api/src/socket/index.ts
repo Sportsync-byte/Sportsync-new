@@ -18,6 +18,12 @@ import { getNetballScoreboard } from '@sportsync/sport-rules';
 import type { NetballMatchState } from '@sportsync/shared';
 import { registerNetballHandlers } from './netball.js';
 import { registerFootballHandlers } from './football.js';
+import { registerBasketballHandlers } from './basketball.js';
+import { setupSocketAuth, rejectUnauthorizedScore } from '../middleware/socket-auth.js';
+import { getFootballScoreboard } from '@sportsync/sport-rules';
+import type { IndoorFootballMatchState } from '@sportsync/shared';
+import { getBasketballScoreboard } from '@sportsync/sport-rules';
+import type { BasketballMatchState } from '@sportsync/shared';
 
 async function persistCricket(
   io: Server,
@@ -43,8 +49,10 @@ export function setupSocketIO(httpServer: HttpServer, corsOrigin: string | strin
     cors: { origin: corsOrigin, methods: ['GET', 'POST'] },
   });
 
+  setupSocketAuth(io);
   registerNetballHandlers(io);
   registerFootballHandlers(io);
+  registerBasketballHandlers(io);
 
   io.on('connection', (socket) => {
     socket.on(SOCKET_EVENTS.MATCH_JOIN, async (matchId: string) => {
@@ -55,6 +63,10 @@ export function setupSocketIO(httpServer: HttpServer, corsOrigin: string | strin
       socket.emit(SOCKET_EVENTS.MATCH_STATE, doc.state);
       if (doc.sport === 'indoor-netball') {
         socket.emit(SOCKET_EVENTS.SCOREBOARD_UPDATE, getNetballScoreboard(doc.state as NetballMatchState));
+      } else if (doc.sport === 'indoor-football') {
+        socket.emit(SOCKET_EVENTS.SCOREBOARD_UPDATE, getFootballScoreboard(doc.state as IndoorFootballMatchState));
+      } else if (doc.sport === 'basketball') {
+        socket.emit(SOCKET_EVENTS.SCOREBOARD_UPDATE, getBasketballScoreboard(doc.state as BasketballMatchState));
       } else {
         socket.emit(SOCKET_EVENTS.SCOREBOARD_UPDATE, getScoreboardDisplay(doc.state as IndoorCricketMatchState));
       }
@@ -77,6 +89,7 @@ export function setupSocketIO(httpServer: HttpServer, corsOrigin: string | strin
         nonStrikerId?: string;
         bowlerId?: string;
       }) => {
+        if (rejectUnauthorizedScore(socket)) return;
         const doc = await MatchStateModel.findOne({ matchId: payload.matchId });
         if (!doc || doc.sport !== 'indoor-cricket') return;
 
@@ -106,6 +119,7 @@ export function setupSocketIO(httpServer: HttpServer, corsOrigin: string | strin
     socket.on(
       SOCKET_EVENTS.MATCH_BALL,
       async (payload: { matchId: string; ball: RecordBallInput }) => {
+        if (rejectUnauthorizedScore(socket)) return;
         const doc = await MatchStateModel.findOne({ matchId: payload.matchId });
         if (!doc || doc.sport !== 'indoor-cricket') return;
         const state = recordBall(doc.state as IndoorCricketMatchState, payload.ball);
@@ -114,6 +128,7 @@ export function setupSocketIO(httpServer: HttpServer, corsOrigin: string | strin
     );
 
     socket.on(SOCKET_EVENTS.MATCH_UNDO, async (matchId: string) => {
+      if (rejectUnauthorizedScore(socket)) return;
       const doc = await MatchStateModel.findOne({ matchId });
       if (!doc || doc.sport !== 'indoor-cricket') return;
       const state = undoLastBall(doc.state as IndoorCricketMatchState);
@@ -123,6 +138,7 @@ export function setupSocketIO(httpServer: HttpServer, corsOrigin: string | strin
     socket.on(
       SOCKET_EVENTS.MATCH_TIMER,
       async (payload: { matchId: string; timerSeconds: number; timerRunning: boolean }) => {
+        if (rejectUnauthorizedScore(socket)) return;
         const doc = await MatchStateModel.findOne({ matchId: payload.matchId });
         if (!doc || doc.sport !== 'indoor-cricket') return;
         const state = structuredClone(doc.state) as IndoorCricketMatchState;

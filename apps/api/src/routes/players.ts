@@ -5,8 +5,12 @@ import { PlayerStatsModel } from '../models/player-stats.js';
 import { CompetitionModel } from '../models/competition.js';
 import { newId } from '../utils/id.js';
 import { uniquePlayerSlug } from '../utils/slug.js';
+import { authMiddleware, requireRole, type AuthRequest } from '../middleware/auth.js';
+import { requirePlayerAccess, requireUserVenue } from '../middleware/venue-scope.js';
 
 export const playersRouter = Router();
+
+const manageRoles = [authMiddleware, requireRole('owner', 'admin', 'competition-manager')];
 
 async function buildPlayerProfile(player: InstanceType<typeof PlayerModel>) {
   const [teams, stats] = await Promise.all([
@@ -91,12 +95,13 @@ playersRouter.get('/:playerId', async (req, res) => {
   res.json(player);
 });
 
-playersRouter.post('/', async (req, res) => {
+playersRouter.post('/', ...manageRoles, async (req: AuthRequest, res) => {
   const { venueId, firstName, lastName, displayName, teamIds, phone } = req.body;
   if (!venueId || !firstName || !lastName) {
     res.status(400).json({ error: 'venueId, firstName, and lastName are required' });
     return;
   }
+  if (!requireUserVenue(req, res, venueId)) return;
 
   const name = displayName || `${firstName} ${lastName}`;
   const slug = await uniquePlayerSlug(venueId, name, async (vId, s) => {
@@ -117,7 +122,8 @@ playersRouter.post('/', async (req, res) => {
   res.status(201).json(player);
 });
 
-playersRouter.patch('/:playerId', async (req, res) => {
+playersRouter.patch('/:playerId', ...manageRoles, async (req: AuthRequest, res) => {
+  if (!(await requirePlayerAccess(req, res, String(req.params.playerId)))) return;
   const player = await PlayerModel.findOneAndUpdate(
     { id: req.params.playerId },
     { $set: req.body },
@@ -130,7 +136,8 @@ playersRouter.patch('/:playerId', async (req, res) => {
   res.json(player);
 });
 
-playersRouter.delete('/:playerId', async (req, res) => {
+playersRouter.delete('/:playerId', ...manageRoles, async (req: AuthRequest, res) => {
+  if (!(await requirePlayerAccess(req, res, String(req.params.playerId)))) return;
   const result = await PlayerModel.deleteOne({ id: req.params.playerId });
   if (result.deletedCount === 0) {
     res.status(404).json({ error: 'Team not found' });

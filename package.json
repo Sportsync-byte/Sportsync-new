@@ -14,6 +14,7 @@
     "dev:scorer": "npm run dev -w @sportsync/scorer",
     "dev:website": "npm run dev -w @sportsync/website",
     "dev:scoreboard": "npm run dev -w @sportsync/scoreboard",
+    "dev:scoreboard-electron": "npm run start -w @sportsync/scoreboard-electron",
     "seed": "npm run seed -w @sportsync/api",
     "build": "npm run build --workspaces --if-present",
     "typecheck": "npm run typecheck --workspaces --if-present"

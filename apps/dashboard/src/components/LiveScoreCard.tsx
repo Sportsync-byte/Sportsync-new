@@ -3,7 +3,7 @@ import type { LiveMatchSummary } from '@sportsync/shared';
 const SCORER_URL = import.meta.env.VITE_SCORER_URL || 'http://localhost:5174';
 
 export function formatLiveScore(m: LiveMatchSummary): { home: string; away: string } {
-  if (m.sport === 'indoor-netball' || m.sport === 'indoor-football') {
+  if (m.sport === 'indoor-netball' || m.sport === 'indoor-football' || m.sport === 'basketball') {
     return { home: String(m.homeScore), away: String(m.awayScore) };
   }
   return {
@@ -22,6 +22,11 @@ export function liveStatusLabel(m: LiveMatchSummary): string {
     if (m.status === 'half-time') return 'Half time';
     if (m.status === 'not-started') return 'Not started';
     return `H${m.quarter ?? 1}`;
+  }
+  if (m.sport === 'basketball') {
+    if (m.status === 'quarter-break') return 'Quarter break';
+    if (m.status === 'not-started') return 'Not started';
+    return `Q${m.quarter ?? 1}`;
   }
   if (m.status === 'not-started') return 'Not started';
   if (m.over != null) return `Over ${m.over}.${m.ball ?? 0}`;
