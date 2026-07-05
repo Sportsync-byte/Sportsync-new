@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { api } from '@sportsync/api-client';
+import { routeScoringPage } from '../lib/sport-routing';
 import { ScoringPage } from './ScoringPage';
 import { NetballScoringPage } from './NetballScoringPage';
 import { FootballScoringPage } from './FootballScoringPage';
@@ -20,9 +21,11 @@ export function MatchRouter() {
   }, [matchId]);
 
   if (!sport) return <div style={{ padding: '2rem', textAlign: 'center' }}>Loading match...</div>;
-  if (sport === 'indoor-netball') return <NetballScoringPage />;
-  if (sport === 'indoor-football') return <FootballScoringPage />;
-  if (sport === 'basketball') return <BasketballScoringPage />;
-  if (sport === 'touch-rugby') return <TouchRugbyScoringPage />;
+
+  const engine = routeScoringPage(sport);
+  if (engine === 'indoor-netball') return <NetballScoringPage />;
+  if (engine === 'indoor-football') return <FootballScoringPage />;
+  if (engine === 'basketball') return <BasketballScoringPage />;
+  if (engine === 'touch-rugby') return <TouchRugbyScoringPage />;
   return <ScoringPage />;
 }

@@ -6,6 +6,7 @@ import {
   undoLastGoal,
   endQuarter,
   getNetballScoreboard,
+  matchUsesEngine,
 } from '@sportsync/sport-rules';
 import type { NetballMatchState } from '@sportsync/shared';
 import { MatchStateModel } from '../models/match-state.js';
@@ -16,16 +17,17 @@ async function persistNetball(
   io: Server,
   matchId: string,
   state: NetballMatchState,
-  venueId: string
+  venueId: string,
+  sport: string
 ) {
   await MatchStateModel.updateOne({ matchId }, { state });
   const scoreboard = getNetballScoreboard(state);
   io.to(`match:${matchId}`).emit(SOCKET_EVENTS.MATCH_STATE, state);
   io.to(`match:${matchId}`).emit(SOCKET_EVENTS.SCOREBOARD_UPDATE, scoreboard);
-  io.to(`venue:${venueId}`).emit(SOCKET_EVENTS.VENUE_LIVE, { matchId, scoreboard, sport: 'indoor-netball' });
+  io.to(`venue:${venueId}`).emit(SOCKET_EVENTS.VENUE_LIVE, { matchId, scoreboard, sport });
 
   if (state.status === 'completed') {
-    await completeFixtureFromMatchState(matchId, 'indoor-netball', state);
+    await completeFixtureFromMatchState(matchId, sport, state);
   }
 }
 
@@ -34,9 +36,9 @@ export function registerNetballHandlers(io: Server) {
     socket.on(SOCKET_EVENTS.NETBALL_START, async (matchId: string) => {
       if (rejectUnauthorizedScore(socket)) return;
       const doc = await MatchStateModel.findOne({ matchId });
-      if (!doc || doc.sport !== 'indoor-netball') return;
+      if (!doc || !matchUsesEngine(doc.sport, 'indoor-netball')) return;
       const state = startNetballMatch(doc.state as NetballMatchState);
-      await persistNetball(io, matchId, state, doc.venueId);
+      await persistNetball(io, matchId, state, doc.venueId, doc.sport);
     });
 
     socket.on(
@@ -44,31 +46,31 @@ export function registerNetballHandlers(io: Server) {
       async (payload: { matchId: string; teamId: string; scorerId: string; assistedById?: string }) => {
         if (rejectUnauthorizedScore(socket)) return;
         const doc = await MatchStateModel.findOne({ matchId: payload.matchId });
-        if (!doc || doc.sport !== 'indoor-netball') return;
+        if (!doc || !matchUsesEngine(doc.sport, 'indoor-netball')) return;
         const state = recordGoal(
           doc.state as NetballMatchState,
           payload.teamId,
           payload.scorerId,
           payload.assistedById
         );
-        await persistNetball(io, payload.matchId, state, doc.venueId);
+        await persistNetball(io, payload.matchId, state, doc.venueId, doc.sport);
       }
     );
 
     socket.on(SOCKET_EVENTS.NETBALL_END_QUARTER, async (matchId: string) => {
       if (rejectUnauthorizedScore(socket)) return;
       const doc = await MatchStateModel.findOne({ matchId });
-      if (!doc || doc.sport !== 'indoor-netball') return;
+      if (!doc || !matchUsesEngine(doc.sport, 'indoor-netball')) return;
       const state = endQuarter(doc.state as NetballMatchState);
-      await persistNetball(io, matchId, state, doc.venueId);
+      await persistNetball(io, matchId, state, doc.venueId, doc.sport);
     });
 
     socket.on(SOCKET_EVENTS.NETBALL_UNDO, async (matchId: string) => {
       if (rejectUnauthorizedScore(socket)) return;
       const doc = await MatchStateModel.findOne({ matchId });
-      if (!doc || doc.sport !== 'indoor-netball') return;
+      if (!doc || !matchUsesEngine(doc.sport, 'indoor-netball')) return;
       const state = undoLastGoal(doc.state as NetballMatchState);
-      await persistNetball(io, matchId, state, doc.venueId);
+      await persistNetball(io, matchId, state, doc.venueId, doc.sport);
     });
 
     socket.on(
@@ -76,7 +78,7 @@ export function registerNetballHandlers(io: Server) {
       async (payload: { matchId: string; timerSeconds: number; timerRunning: boolean }) => {
         if (rejectUnauthorizedScore(socket)) return;
         const doc = await MatchStateModel.findOne({ matchId: payload.matchId });
-        if (!doc || doc.sport !== 'indoor-netball') return;
+        if (!doc || !matchUsesEngine(doc.sport, 'indoor-netball')) return;
         const state = structuredClone(doc.state) as NetballMatchState;
         state.timerSeconds = payload.timerSeconds;
         state.timerRunning = payload.timerRunning;
@@ -84,7 +86,7 @@ export function registerNetballHandlers(io: Server) {
           state.timerExpired = true;
           state.timerRunning = false;
         }
-        await persistNetball(io, payload.matchId, state, doc.venueId);
+        await persistNetball(io, payload.matchId, state, doc.venueId, doc.sport);
       }
     );
   });

@@ -1,16 +1,18 @@
 import { goalStatLabel, isGoalSport, sortPlayerStatsBySport } from './sports.js';
 
 describe('sports helpers', () => {
-  it('identifies goal sports', () => {
+  it('identifies goal sports including outdoor variants', () => {
     expect(isGoalSport('indoor-netball')).toBe(true);
-    expect(isGoalSport('touch-rugby')).toBe(true);
+    expect(isGoalSport('outdoor-netball')).toBe(true);
+    expect(isGoalSport('rugby-union')).toBe(true);
     expect(isGoalSport('indoor-cricket')).toBe(false);
   });
 
   it('returns stat labels per sport', () => {
     expect(goalStatLabel('basketball')).toBe('Points');
     expect(goalStatLabel('touch-rugby')).toBe('Tries');
-    expect(goalStatLabel('indoor-football')).toBe('Goals');
+    expect(goalStatLabel('rugby-union')).toBe('Tries');
+    expect(goalStatLabel('outdoor-football')).toBe('Goals');
   });
 
   it('sorts stats by goals or runs', () => {

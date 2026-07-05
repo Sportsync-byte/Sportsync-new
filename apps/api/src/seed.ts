@@ -45,7 +45,7 @@ async function seed() {
     productTier: 'stadium',
     branding: { primaryColor: '#00c896', secondaryColor: '#1a2332' },
     courtCount: 4,
-    sports: ['indoor-cricket', 'indoor-netball', 'indoor-football', 'basketball', 'touch-rugby'],
+    sports: ['indoor-cricket', 'indoor-netball', 'indoor-football', 'basketball', 'touch-rugby', 'outdoor-cricket', 'outdoor-football', 'outdoor-netball', 'rugby-union', 'rugby-league'],
     licenseKey,
     smsEnabled: true,
     smsAutoRemindersEnabled: true,
@@ -301,6 +301,50 @@ async function seed() {
     }))
   );
   console.log(`Touch Rugby Competition ID: ${rugbyCompId}`);
+
+  const outdoorFootballTeams = teams.slice(1, 5);
+  const outdoorFootballCompId = newId();
+  await CompetitionModel.create({
+    id: outdoorFootballCompId,
+    venueId,
+    sport: 'outdoor-football',
+    name: 'Regional 11-a-side League 2026',
+    season: '2026',
+    status: 'active',
+    teamIds: outdoorFootballTeams.map((t) => t.id),
+    settings: { pointsForWin: 3, pointsForTie: 1, pointsForLoss: 0, doubleRoundRobin: false },
+    ladder: [],
+  });
+  const outdoorFootballFixtures = generateRoundRobinFixtures(
+    outdoorFootballTeams.map((t) => t.id),
+    outdoorFootballCompId,
+    'default',
+    { startDate: new Date().toISOString(), daysBetweenRounds: 14, courtIds: courts.map((c) => c.id), slotMinutes: 90 }
+  );
+  await FixtureModel.insertMany(outdoorFootballFixtures.map((f) => ({ ...f, id: newId(), venueId })));
+  console.log(`Outdoor Football Competition ID: ${outdoorFootballCompId}`);
+
+  const unionTeams = teams.slice(0, 4);
+  const unionCompId = newId();
+  await CompetitionModel.create({
+    id: unionCompId,
+    venueId,
+    sport: 'rugby-union',
+    name: 'Premier Rugby Union 2026',
+    season: '2026',
+    status: 'active',
+    teamIds: unionTeams.map((t) => t.id),
+    settings: { pointsForWin: 4, pointsForTie: 2, pointsForLoss: 0, doubleRoundRobin: false },
+    ladder: [],
+  });
+  const unionFixtures = generateRoundRobinFixtures(
+    unionTeams.map((t) => t.id),
+    unionCompId,
+    'default',
+    { startDate: new Date().toISOString(), daysBetweenRounds: 14, courtIds: courts.map((c) => c.id), slotMinutes: 80 }
+  );
+  await FixtureModel.insertMany(unionFixtures.map((f) => ({ ...f, id: newId(), venueId })));
+  console.log(`Rugby Union Competition ID: ${unionCompId}`);
 
   console.log(`Teams: ${teams.length}, Players: ${players.length}, Fixtures: ${generated.length}`);
 

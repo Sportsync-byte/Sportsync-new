@@ -6,6 +6,7 @@ import {
   undoLastTouchRugbyTry,
   endTouchRugbyHalf,
   getTouchRugbyScoreboard,
+  matchUsesEngine,
 } from '@sportsync/sport-rules';
 import type { TouchRugbyMatchState } from '@sportsync/shared';
 import { MatchStateModel } from '../models/match-state.js';
@@ -16,16 +17,17 @@ async function persistTouchRugby(
   io: Server,
   matchId: string,
   state: TouchRugbyMatchState,
-  venueId: string
+  venueId: string,
+  sport: string
 ) {
   await MatchStateModel.updateOne({ matchId }, { state });
   const scoreboard = getTouchRugbyScoreboard(state);
   io.to(`match:${matchId}`).emit(SOCKET_EVENTS.MATCH_STATE, state);
   io.to(`match:${matchId}`).emit(SOCKET_EVENTS.SCOREBOARD_UPDATE, scoreboard);
-  io.to(`venue:${venueId}`).emit(SOCKET_EVENTS.VENUE_LIVE, { matchId, scoreboard, sport: 'touch-rugby' });
+  io.to(`venue:${venueId}`).emit(SOCKET_EVENTS.VENUE_LIVE, { matchId, scoreboard, sport });
 
   if (state.status === 'completed') {
-    await completeFixtureFromMatchState(matchId, 'touch-rugby', state);
+    await completeFixtureFromMatchState(matchId, sport, state);
   }
 }
 
@@ -34,9 +36,9 @@ export function registerTouchRugbyHandlers(io: Server) {
     socket.on(SOCKET_EVENTS.TOUCH_RUGBY_START, async (matchId: string) => {
       if (rejectUnauthorizedScore(socket)) return;
       const doc = await MatchStateModel.findOne({ matchId });
-      if (!doc || doc.sport !== 'touch-rugby') return;
+      if (!doc || !matchUsesEngine(doc.sport, 'touch-rugby')) return;
       const state = startTouchRugbyMatch(doc.state as TouchRugbyMatchState);
-      await persistTouchRugby(io, matchId, state, doc.venueId);
+      await persistTouchRugby(io, matchId, state, doc.venueId, doc.sport);
     });
 
     socket.on(
@@ -44,31 +46,31 @@ export function registerTouchRugbyHandlers(io: Server) {
       async (payload: { matchId: string; teamId: string; scorerId: string; assistedById?: string }) => {
         if (rejectUnauthorizedScore(socket)) return;
         const doc = await MatchStateModel.findOne({ matchId: payload.matchId });
-        if (!doc || doc.sport !== 'touch-rugby') return;
+        if (!doc || !matchUsesEngine(doc.sport, 'touch-rugby')) return;
         const state = recordTouchRugbyTry(
           doc.state as TouchRugbyMatchState,
           payload.teamId,
           payload.scorerId,
           payload.assistedById
         );
-        await persistTouchRugby(io, payload.matchId, state, doc.venueId);
+        await persistTouchRugby(io, payload.matchId, state, doc.venueId, doc.sport);
       }
     );
 
     socket.on(SOCKET_EVENTS.TOUCH_RUGBY_END_HALF, async (matchId: string) => {
       if (rejectUnauthorizedScore(socket)) return;
       const doc = await MatchStateModel.findOne({ matchId });
-      if (!doc || doc.sport !== 'touch-rugby') return;
+      if (!doc || !matchUsesEngine(doc.sport, 'touch-rugby')) return;
       const state = endTouchRugbyHalf(doc.state as TouchRugbyMatchState);
-      await persistTouchRugby(io, matchId, state, doc.venueId);
+      await persistTouchRugby(io, matchId, state, doc.venueId, doc.sport);
     });
 
     socket.on(SOCKET_EVENTS.TOUCH_RUGBY_UNDO, async (matchId: string) => {
       if (rejectUnauthorizedScore(socket)) return;
       const doc = await MatchStateModel.findOne({ matchId });
-      if (!doc || doc.sport !== 'touch-rugby') return;
+      if (!doc || !matchUsesEngine(doc.sport, 'touch-rugby')) return;
       const state = undoLastTouchRugbyTry(doc.state as TouchRugbyMatchState);
-      await persistTouchRugby(io, matchId, state, doc.venueId);
+      await persistTouchRugby(io, matchId, state, doc.venueId, doc.sport);
     });
 
     socket.on(
@@ -76,7 +78,7 @@ export function registerTouchRugbyHandlers(io: Server) {
       async (payload: { matchId: string; timerSeconds: number; timerRunning: boolean }) => {
         if (rejectUnauthorizedScore(socket)) return;
         const doc = await MatchStateModel.findOne({ matchId: payload.matchId });
-        if (!doc || doc.sport !== 'touch-rugby') return;
+        if (!doc || !matchUsesEngine(doc.sport, 'touch-rugby')) return;
         const state = structuredClone(doc.state) as TouchRugbyMatchState;
         state.timerSeconds = payload.timerSeconds;
         state.timerRunning = payload.timerRunning;
@@ -84,7 +86,7 @@ export function registerTouchRugbyHandlers(io: Server) {
           state.timerExpired = true;
           state.timerRunning = false;
         }
-        await persistTouchRugby(io, payload.matchId, state, doc.venueId);
+        await persistTouchRugby(io, payload.matchId, state, doc.venueId, doc.sport);
       }
     );
   });

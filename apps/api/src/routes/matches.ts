@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { INDOOR_CRICKET_FORMATS } from '@sportsync/shared';
-import { getScoreboardDisplay, getNetballScoreboard, getFootballScoreboard, getBasketballScoreboard, getTouchRugbyScoreboard } from '@sportsync/sport-rules';
-import type { IndoorCricketMatchState, NetballMatchState, IndoorFootballMatchState, BasketballMatchState, TouchRugbyMatchState } from '@sportsync/shared';
+import type { SportId } from '@sportsync/shared';
+import { getScoreboardForMatch } from '@sportsync/sport-rules';
 import { MatchStateModel } from '../models/match-state.js';
 import { searchLiveMatches } from '../services/live.js';
 
@@ -18,16 +18,7 @@ matchesRouter.get('/:matchId', async (req, res) => {
       res.status(404).json({ error: 'Match not found' });
       return;
     }
-    const scoreboard =
-      doc.sport === 'indoor-netball'
-        ? getNetballScoreboard(doc.state as NetballMatchState)
-        : doc.sport === 'indoor-football'
-          ? getFootballScoreboard(doc.state as IndoorFootballMatchState)
-          : doc.sport === 'basketball'
-            ? getBasketballScoreboard(doc.state as BasketballMatchState)
-            : doc.sport === 'touch-rugby'
-              ? getTouchRugbyScoreboard(doc.state as TouchRugbyMatchState)
-              : getScoreboardDisplay(doc.state as IndoorCricketMatchState);
+    const scoreboard = getScoreboardForMatch((doc.sport || 'indoor-cricket') as SportId, doc.state);
     res.json({ ...doc.toObject(), scoreboard });
   } catch (error) {
     console.error(error);

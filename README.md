@@ -45,6 +45,11 @@ sportsync/
 | Indoor football | Goals per half | Goals, assists |
 | Basketball | 2pt/3pt baskets per quarter | Points, assists |
 | Touch rugby | Tries per half | Tries, assists |
+| Outdoor cricket | Same engine, 11-a-side T20 format | Runs, wickets |
+| Outdoor football | Same engine, 11-a-side halves | Goals, assists |
+| Outdoor netball | Same engine, 15-min quarters | Goals, assists |
+| Rugby union | Try-based (15-a-side) | Tries, assists |
+| Rugby league | Try-based (13-a-side) | Tries, assists |
 
 ## End-to-end flow
 
@@ -179,6 +184,25 @@ docker compose up --build
 
 API listens on http://localhost:3001. Run `npm run seed` against the container MongoDB to load demo data.
 
+### Full stack with static frontends
+
+Build frontends first, then start nginx + API:
+
+```bash
+npm run build -w @sportsync/dashboard
+npm run build -w @sportsync/scorer
+npm run build -w @sportsync/scoreboard
+npm run build -w @sportsync/website
+docker compose -f docker-compose.full.yml up --build
+```
+
+| URL | App |
+|-----|-----|
+| http://localhost:8080 | Dashboard |
+| http://localhost:8081 | Scorer |
+| http://localhost:8082 | Scoreboard |
+| http://localhost:8083 | Website |
+
 ## Production checklist
 
 Before going live, update `apps/api/.env`:
@@ -199,10 +223,10 @@ Scorers must log in via the Scorer app so socket scoring events include a JWT.
 - [x] Electron auto-start on boot (systemd / Windows startup)
 - [x] Touch rugby sport module
 - [x] Goal-sport stats for all team sports (netball, football, basketball, touch rugby)
-- [ ] Outdoor sport variants (cricket, football, netball)
-- [ ] Rugby union / rugby league modules
+- [x] Outdoor sport variants (cricket, football, netball)
+- [x] Rugby union / rugby league modules
+- [x] Hosted deploy templates (static frontends + API via `docker-compose.full.yml`)
 - [ ] End-to-end integration tests
-- [ ] Hosted deploy templates (static frontends + API)
 - [x] Court management in dashboard
 - [x] Scorer login for production socket auth
 - [x] SMS roster send from fixtures

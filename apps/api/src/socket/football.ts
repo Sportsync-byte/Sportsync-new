@@ -6,6 +6,7 @@ import {
   undoLastFootballGoal,
   endFootballHalf,
   getFootballScoreboard,
+  matchUsesEngine,
 } from '@sportsync/sport-rules';
 import type { IndoorFootballMatchState } from '@sportsync/shared';
 import { MatchStateModel } from '../models/match-state.js';
@@ -16,16 +17,17 @@ async function persistFootball(
   io: Server,
   matchId: string,
   state: IndoorFootballMatchState,
-  venueId: string
+  venueId: string,
+  sport: string
 ) {
   await MatchStateModel.updateOne({ matchId }, { state });
   const scoreboard = getFootballScoreboard(state);
   io.to(`match:${matchId}`).emit(SOCKET_EVENTS.MATCH_STATE, state);
   io.to(`match:${matchId}`).emit(SOCKET_EVENTS.SCOREBOARD_UPDATE, scoreboard);
-  io.to(`venue:${venueId}`).emit(SOCKET_EVENTS.VENUE_LIVE, { matchId, scoreboard, sport: 'indoor-football' });
+  io.to(`venue:${venueId}`).emit(SOCKET_EVENTS.VENUE_LIVE, { matchId, scoreboard, sport });
 
   if (state.status === 'completed') {
-    await completeFixtureFromMatchState(matchId, 'indoor-football', state);
+    await completeFixtureFromMatchState(matchId, sport, state);
   }
 }
 
@@ -34,9 +36,9 @@ export function registerFootballHandlers(io: Server) {
     socket.on(SOCKET_EVENTS.FOOTBALL_START, async (matchId: string) => {
       if (rejectUnauthorizedScore(socket)) return;
       const doc = await MatchStateModel.findOne({ matchId });
-      if (!doc || doc.sport !== 'indoor-football') return;
+      if (!doc || !matchUsesEngine(doc.sport, 'indoor-football')) return;
       const state = startFootballMatch(doc.state as IndoorFootballMatchState);
-      await persistFootball(io, matchId, state, doc.venueId);
+      await persistFootball(io, matchId, state, doc.venueId, doc.sport);
     });
 
     socket.on(
@@ -44,31 +46,31 @@ export function registerFootballHandlers(io: Server) {
       async (payload: { matchId: string; teamId: string; scorerId: string; assistedById?: string }) => {
         if (rejectUnauthorizedScore(socket)) return;
         const doc = await MatchStateModel.findOne({ matchId: payload.matchId });
-        if (!doc || doc.sport !== 'indoor-football') return;
+        if (!doc || !matchUsesEngine(doc.sport, 'indoor-football')) return;
         const state = recordFootballGoal(
           doc.state as IndoorFootballMatchState,
           payload.teamId,
           payload.scorerId,
           payload.assistedById
         );
-        await persistFootball(io, payload.matchId, state, doc.venueId);
+        await persistFootball(io, payload.matchId, state, doc.venueId, doc.sport);
       }
     );
 
     socket.on(SOCKET_EVENTS.FOOTBALL_END_HALF, async (matchId: string) => {
       if (rejectUnauthorizedScore(socket)) return;
       const doc = await MatchStateModel.findOne({ matchId });
-      if (!doc || doc.sport !== 'indoor-football') return;
+      if (!doc || !matchUsesEngine(doc.sport, 'indoor-football')) return;
       const state = endFootballHalf(doc.state as IndoorFootballMatchState);
-      await persistFootball(io, matchId, state, doc.venueId);
+      await persistFootball(io, matchId, state, doc.venueId, doc.sport);
     });
 
     socket.on(SOCKET_EVENTS.FOOTBALL_UNDO, async (matchId: string) => {
       if (rejectUnauthorizedScore(socket)) return;
       const doc = await MatchStateModel.findOne({ matchId });
-      if (!doc || doc.sport !== 'indoor-football') return;
+      if (!doc || !matchUsesEngine(doc.sport, 'indoor-football')) return;
       const state = undoLastFootballGoal(doc.state as IndoorFootballMatchState);
-      await persistFootball(io, matchId, state, doc.venueId);
+      await persistFootball(io, matchId, state, doc.venueId, doc.sport);
     });
 
     socket.on(
@@ -76,7 +78,7 @@ export function registerFootballHandlers(io: Server) {
       async (payload: { matchId: string; timerSeconds: number; timerRunning: boolean }) => {
         if (rejectUnauthorizedScore(socket)) return;
         const doc = await MatchStateModel.findOne({ matchId: payload.matchId });
-        if (!doc || doc.sport !== 'indoor-football') return;
+        if (!doc || !matchUsesEngine(doc.sport, 'indoor-football')) return;
         const state = structuredClone(doc.state) as IndoorFootballMatchState;
         state.timerSeconds = payload.timerSeconds;
         state.timerRunning = payload.timerRunning;
@@ -84,7 +86,7 @@ export function registerFootballHandlers(io: Server) {
           state.timerExpired = true;
           state.timerRunning = false;
         }
-        await persistFootball(io, payload.matchId, state, doc.venueId);
+        await persistFootball(io, payload.matchId, state, doc.venueId, doc.sport);
       }
     );
   });

@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { io } from 'socket.io-client';
-import { SOCKET_EVENTS } from '@sportsync/shared';
+import { SOCKET_EVENTS, scoringEngineSport, type SportId } from '@sportsync/shared';
 import type { NetballMatchState, IndoorFootballMatchState, BasketballMatchState, TouchRugbyMatchState } from '@sportsync/shared';
 import { api } from '@sportsync/api-client';
 import { getNetballScoreboard, getFootballScoreboard, getBasketballScoreboard, getTouchRugbyScoreboard } from '@sportsync/sport-rules';
@@ -21,10 +21,11 @@ export function DisplayRouter() {
   }, [matchId]);
 
   if (!sport) return <div style={{ minHeight: '100vh', display: 'grid', placeItems: 'center', background: '#0a0e12', color: '#fff' }}>Loading...</div>;
-  if (sport === 'indoor-netball') return <NetballDisplayPage />;
-  if (sport === 'indoor-football') return <FootballDisplayPage />;
-  if (sport === 'basketball') return <BasketballDisplayPage />;
-  if (sport === 'touch-rugby') return <TouchRugbyDisplayPage />;
+  const engine = scoringEngineSport(sport as SportId);
+  if (engine === 'indoor-netball') return <NetballDisplayPage />;
+  if (engine === 'indoor-football') return <FootballDisplayPage />;
+  if (engine === 'basketball') return <BasketballDisplayPage />;
+  if (engine === 'touch-rugby') return <TouchRugbyDisplayPage />;
   return <ScoreboardDisplayPage />;
 }
 
