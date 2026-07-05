@@ -1,0 +1,68 @@
+# Full stack: API + MongoDB + static frontends behind nginx
+# Usage: docker compose -f docker-compose.full.yml up --build
+# Dashboard: http://localhost:8080
+# Scorer: http://localhost:8081
+# Scoreboard: http://localhost:8082
+# Website: http://localhost:8083
+
+services:
+  mongo:
+    image: mongo:7
+    restart: unless-stopped
+    volumes:
+      - sportsync-mongo:/data/db
+
+  api:
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile
+    restart: unless-stopped
+    environment:
+      PORT: 3001
+      MONGODB_URI: mongodb://mongo:27017/sportsync
+      CORS_ORIGIN: http://localhost:8080,http://localhost:8081,http://localhost:8082,http://localhost:8083
+      JWT_SECRET: ${JWT_SECRET:-change-this-in-production}
+      SOCKET_AUTH_OPTIONAL: ${SOCKET_AUTH_OPTIONAL:-true}
+    depends_on:
+      - mongo
+
+  dashboard:
+    image: nginx:alpine
+    ports:
+      - "8080:80"
+    volumes:
+      - ./apps/dashboard/dist:/usr/share/nginx/html:ro
+      - ./deploy/nginx/spa.conf:/etc/nginx/conf.d/default.conf:ro
+    depends_on:
+      - api
+
+  scorer:
+    image: nginx:alpine
+    ports:
+      - "8081:80"
+    volumes:
+      - ./apps/scorer/dist:/usr/share/nginx/html:ro
+      - ./deploy/nginx/spa.conf:/etc/nginx/conf.d/default.conf:ro
+    depends_on:
+      - api
+
+  scoreboard:
+    image: nginx:alpine
+    ports:
+      - "8082:80"
+    volumes:
+      - ./apps/scoreboard/dist:/usr/share/nginx/html:ro
+      - ./deploy/nginx/spa.conf:/etc/nginx/conf.d/default.conf:ro
+    depends_on:
+      - api
+
+  website:
+    image: nginx:alpine
+    ports:
+      - "8083:80"
+    volumes:
+      - ./apps/website/dist:/usr/share/nginx/html:ro
+      - ./deploy/nginx/spa.conf:/etc/nginx/conf.d/default.conf:ro
+
+volumes:
+  sportsync-mongo:

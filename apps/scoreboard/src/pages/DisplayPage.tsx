@@ -1,6 +1,6 @@
 import { useEffect, useState, type ReactNode } from 'react';
 import { io } from 'socket.io-client';
-import { SOCKET_EVENTS } from '@sportsync/shared';
+import { SOCKET_EVENTS, scoringEngineSport, sportDisplayName, type SportId } from '@sportsync/shared';
 import type { IndoorCricketMatchState, NetballMatchState, IndoorFootballMatchState, BasketballMatchState, TouchRugbyMatchState } from '@sportsync/shared';
 import { getScoreboardDisplay, getNetballScoreboard, getFootballScoreboard, getBasketballScoreboard, getTouchRugbyScoreboard } from '@sportsync/sport-rules';
 import { api } from '@sportsync/api-client';
@@ -85,14 +85,15 @@ export function DisplayPage() {
     );
   }
 
-  if (sport === 'indoor-netball') return <NetballDisplay matchId={matchId} kioskButton={kioskButton} />;
-  if (sport === 'indoor-football') return <FootballDisplay matchId={matchId} kioskButton={kioskButton} />;
-  if (sport === 'basketball') return <BasketballDisplay matchId={matchId} kioskButton={kioskButton} />;
-  if (sport === 'touch-rugby') return <TouchRugbyDisplay matchId={matchId} kioskButton={kioskButton} />;
-  return <CricketDisplay matchId={matchId} kioskButton={kioskButton} />;
+  const engine = scoringEngineSport(sport as SportId);
+  if (engine === 'indoor-netball') return <NetballDisplay matchId={matchId} sport={sport} kioskButton={kioskButton} />;
+  if (engine === 'indoor-football') return <FootballDisplay matchId={matchId} sport={sport} kioskButton={kioskButton} />;
+  if (engine === 'basketball') return <BasketballDisplay matchId={matchId} kioskButton={kioskButton} />;
+  if (engine === 'touch-rugby') return <TouchRugbyDisplay matchId={matchId} sport={sport} kioskButton={kioskButton} />;
+  return <CricketDisplay matchId={matchId} sport={sport} kioskButton={kioskButton} />;
 }
 
-function CricketDisplay({ matchId, kioskButton }: { matchId: string; kioskButton: ReactNode }) {
+function CricketDisplay({ matchId, sport, kioskButton }: { matchId: string; sport: string; kioskButton: ReactNode }) {
   const [state, setState] = useState<IndoorCricketMatchState | null>(null);
   const [teamNames, setTeamNames] = useState<Record<string, string>>({});
   const [venueName, setVenueName] = useState('');
@@ -124,7 +125,7 @@ function CricketDisplay({ matchId, kioskButton }: { matchId: string; kioskButton
 
   return (
     <div style={{ minHeight: '100vh', background: 'linear-gradient(180deg, #1a2332 0%, #0a0e12 100%)', color: '#fff', padding: '2rem' }}>
-      <div style={{ textAlign: 'center', marginBottom: '2rem', color: '#7d8fa3' }}>{venueName}</div>
+      <div style={{ textAlign: 'center', marginBottom: '2rem', color: '#7d8fa3' }}>{venueName} · {sportDisplayName(sport as SportId).toUpperCase()}</div>
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '2rem', maxWidth: 900, margin: '0 auto' }}>
         <div style={{ textAlign: 'center' }}>
           <div style={{ fontSize: '0.9rem', color: '#7d8fa3' }}>{teamNames[batting.teamId] || 'Batting'}</div>
@@ -141,7 +142,7 @@ function CricketDisplay({ matchId, kioskButton }: { matchId: string; kioskButton
   );
 }
 
-function NetballDisplay({ matchId, kioskButton }: { matchId: string; kioskButton: ReactNode }) {
+function NetballDisplay({ matchId, sport, kioskButton }: { matchId: string; sport: string; kioskButton: ReactNode }) {
   const [state, setState] = useState<NetballMatchState | null>(null);
   const [teamNames, setTeamNames] = useState<Record<string, string>>({});
 
@@ -166,7 +167,7 @@ function NetballDisplay({ matchId, kioskButton }: { matchId: string; kioskButton
 
   return (
     <div style={{ minHeight: '100vh', background: '#0a0e12', color: '#fff', padding: '2rem' }}>
-      <div style={{ textAlign: 'center', marginBottom: '1rem', color: '#7d8fa3' }}>NETBALL · Q{display.quarter}</div>
+      <div style={{ textAlign: 'center', marginBottom: '1rem', color: '#7d8fa3' }}>{sportDisplayName(sport as SportId).toUpperCase()} · Q{display.quarter}</div>
       <div style={{ display: 'grid', gridTemplateColumns: '1fr auto 1fr', alignItems: 'center', gap: '2rem' }}>
         <div style={{ textAlign: 'center' }}>
           <div>{teamNames[display.homeTeamId] || 'Home'}</div>
@@ -183,7 +184,7 @@ function NetballDisplay({ matchId, kioskButton }: { matchId: string; kioskButton
   );
 }
 
-function FootballDisplay({ matchId, kioskButton }: { matchId: string; kioskButton: ReactNode }) {
+function FootballDisplay({ matchId, sport, kioskButton }: { matchId: string; sport: string; kioskButton: ReactNode }) {
   const [state, setState] = useState<IndoorFootballMatchState | null>(null);
   const [teamNames, setTeamNames] = useState<Record<string, string>>({});
 
@@ -208,7 +209,7 @@ function FootballDisplay({ matchId, kioskButton }: { matchId: string; kioskButto
 
   return (
     <div style={{ minHeight: '100vh', background: '#0a0e12', color: '#fff', padding: '2rem' }}>
-      <div style={{ textAlign: 'center', marginBottom: '1rem', color: '#7d8fa3' }}>FOOTBALL · Half {display.half}</div>
+      <div style={{ textAlign: 'center', marginBottom: '1rem', color: '#7d8fa3' }}>{sportDisplayName(sport as SportId).toUpperCase()} · Half {display.half}</div>
       <div style={{ display: 'grid', gridTemplateColumns: '1fr auto 1fr', alignItems: 'center', gap: '2rem' }}>
         <div style={{ textAlign: 'center' }}>
           <div>{teamNames[display.homeTeamId] || 'Home'}</div>
@@ -267,7 +268,7 @@ function BasketballDisplay({ matchId, kioskButton }: { matchId: string; kioskBut
   );
 }
 
-function TouchRugbyDisplay({ matchId, kioskButton }: { matchId: string; kioskButton: ReactNode }) {
+function TouchRugbyDisplay({ matchId, sport, kioskButton }: { matchId: string; sport: string; kioskButton: ReactNode }) {
   const [state, setState] = useState<TouchRugbyMatchState | null>(null);
   const [teamNames, setTeamNames] = useState<Record<string, string>>({});
 
@@ -292,7 +293,7 @@ function TouchRugbyDisplay({ matchId, kioskButton }: { matchId: string; kioskBut
 
   return (
     <div style={{ minHeight: '100vh', background: '#0a0e12', color: '#fff', padding: '2rem' }}>
-      <div style={{ textAlign: 'center', marginBottom: '1rem', color: '#7d8fa3' }}>TOUCH RUGBY · Half {display.half}</div>
+      <div style={{ textAlign: 'center', marginBottom: '1rem', color: '#7d8fa3' }}>{sportDisplayName(sport as SportId).toUpperCase()} · Half {display.half}</div>
       <div style={{ display: 'grid', gridTemplateColumns: '1fr auto 1fr', alignItems: 'center', gap: '2rem' }}>
         <div style={{ textAlign: 'center' }}>
           <div>{teamNames[display.homeTeamId] || 'Home'}</div>

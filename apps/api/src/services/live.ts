@@ -3,21 +3,25 @@ import { FixtureModel } from '../models/fixture.js';
 import { TeamModel } from '../models/team.js';
 import { CompetitionModel } from '../models/competition.js';
 import { CourtModel } from '../models/court.js';
-import { getScoreboardDisplay, getNetballScoreboard, getFootballScoreboard, getBasketballScoreboard, getTouchRugbyScoreboard } from '@sportsync/sport-rules';
-import type { IndoorCricketMatchState, NetballMatchState, LiveMatchSummary, SportId, IndoorFootballMatchState, BasketballMatchState, TouchRugbyMatchState } from '@sportsync/shared';
+import { getScoreboardForMatch } from '@sportsync/sport-rules';
+import { scoringEngineSport } from '@sportsync/shared';
+import type {
+  IndoorCricketMatchState,
+  NetballMatchState,
+  LiveMatchSummary,
+  SportId,
+  IndoorFootballMatchState,
+  BasketballMatchState,
+  TouchRugbyMatchState,
+} from '@sportsync/shared';
 
-function isLiveMatchStatus(sport: string, status: string): boolean {
+function isLiveMatchStatus(sport: SportId, status: string): boolean {
   if (status === 'completed') return false;
-  if (sport === 'indoor-netball') {
+  const engine = scoringEngineSport(sport);
+  if (engine === 'indoor-netball' || engine === 'basketball') {
     return ['live', 'quarter-break', 'not-started'].includes(status);
   }
-  if (sport === 'indoor-football') {
-    return ['live', 'half-time', 'not-started'].includes(status);
-  }
-  if (sport === 'basketball') {
-    return ['live', 'quarter-break', 'not-started'].includes(status);
-  }
-  if (sport === 'touch-rugby') {
+  if (engine === 'indoor-football' || engine === 'touch-rugby') {
     return ['live', 'half-time', 'not-started'].includes(status);
   }
   return ['innings-1', 'innings-2', 'not-started'].includes(status);
@@ -38,13 +42,19 @@ export async function searchLiveMatches(query: {
 
   for (const doc of matches) {
     const sport = (doc.sport || 'indoor-cricket') as SportId;
+    const engine = scoringEngineSport(sport);
     const fixture = await FixtureModel.findOne({ id: doc.fixtureId });
     if (!fixture) continue;
     if (fixture.status === 'completed') continue;
     if (query.competitionId && fixture.competitionId !== query.competitionId) continue;
     if (query.courtId && fixture.courtId !== query.courtId) continue;
 
-    const state = doc.state as IndoorCricketMatchState | NetballMatchState | IndoorFootballMatchState | BasketballMatchState | TouchRugbyMatchState;
+    const state = doc.state as
+      | IndoorCricketMatchState
+      | NetballMatchState
+      | IndoorFootballMatchState
+      | BasketballMatchState
+      | TouchRugbyMatchState;
     if (query.liveOnly && !isLiveMatchStatus(sport, state.status)) continue;
 
     const [homeTeam, awayTeam, competition, court] = await Promise.all([
@@ -61,108 +71,7 @@ export async function searchLiveMatches(query: {
       if (!homeMatch && !awayMatch) continue;
     }
 
-    if (sport === 'indoor-netball') {
-      const netballState = state as NetballMatchState;
-      const display = getNetballScoreboard(netballState);
-      summaries.push({
-        matchId: doc.matchId,
-        fixtureId: doc.fixtureId,
-        venueId: doc.venueId,
-        competitionId: fixture.competitionId,
-        sport,
-        competitionName: competition?.name,
-        courtId: fixture.courtId ?? undefined,
-        courtName: court?.name,
-        homeTeamId: fixture.homeTeamId,
-        homeTeamName: homeTeam?.name,
-        awayTeamId: fixture.awayTeamId,
-        awayTeamName: awayTeam?.name,
-        homeScore: netballState.homeScore,
-        awayScore: netballState.awayScore,
-        status: netballState.status,
-        quarter: display.quarter,
-      });
-      continue;
-    }
-
-    if (sport === 'indoor-football') {
-      const footballState = state as IndoorFootballMatchState;
-      const display = getFootballScoreboard(footballState);
-      summaries.push({
-        matchId: doc.matchId,
-        fixtureId: doc.fixtureId,
-        venueId: doc.venueId,
-        competitionId: fixture.competitionId,
-        sport,
-        competitionName: competition?.name,
-        courtId: fixture.courtId ?? undefined,
-        courtName: court?.name,
-        homeTeamId: fixture.homeTeamId,
-        homeTeamName: homeTeam?.name,
-        awayTeamId: fixture.awayTeamId,
-        awayTeamName: awayTeam?.name,
-        homeScore: footballState.homeScore,
-        awayScore: footballState.awayScore,
-        status: footballState.status,
-        quarter: display.half,
-      });
-      continue;
-    }
-
-    if (sport === 'basketball') {
-      const basketballState = state as BasketballMatchState;
-      const display = getBasketballScoreboard(basketballState);
-      summaries.push({
-        matchId: doc.matchId,
-        fixtureId: doc.fixtureId,
-        venueId: doc.venueId,
-        competitionId: fixture.competitionId,
-        sport,
-        competitionName: competition?.name,
-        courtId: fixture.courtId ?? undefined,
-        courtName: court?.name,
-        homeTeamId: fixture.homeTeamId,
-        homeTeamName: homeTeam?.name,
-        awayTeamId: fixture.awayTeamId,
-        awayTeamName: awayTeam?.name,
-        homeScore: basketballState.homeScore,
-        awayScore: basketballState.awayScore,
-        status: basketballState.status,
-        quarter: display.quarter,
-      });
-      continue;
-    }
-
-    if (sport === 'touch-rugby') {
-      const rugbyState = state as TouchRugbyMatchState;
-      const display = getTouchRugbyScoreboard(rugbyState);
-      summaries.push({
-        matchId: doc.matchId,
-        fixtureId: doc.fixtureId,
-        venueId: doc.venueId,
-        competitionId: fixture.competitionId,
-        sport,
-        competitionName: competition?.name,
-        courtId: fixture.courtId ?? undefined,
-        courtName: court?.name,
-        homeTeamId: fixture.homeTeamId,
-        homeTeamName: homeTeam?.name,
-        awayTeamId: fixture.awayTeamId,
-        awayTeamName: awayTeam?.name,
-        homeScore: rugbyState.homeScore,
-        awayScore: rugbyState.awayScore,
-        status: rugbyState.status,
-        quarter: display.half,
-      });
-      continue;
-    }
-
-    const cricketState = state as IndoorCricketMatchState;
-    const display = getScoreboardDisplay(cricketState);
-    const homeInnings = cricketState.innings.find((i) => i.teamId === fixture.homeTeamId) ?? cricketState.innings[0];
-    const awayInnings = cricketState.innings.find((i) => i.teamId === fixture.awayTeamId) ?? cricketState.innings[1];
-
-    summaries.push({
+    const base = {
       matchId: doc.matchId,
       fixtureId: doc.fixtureId,
       venueId: doc.venueId,
@@ -175,6 +84,67 @@ export async function searchLiveMatches(query: {
       homeTeamName: homeTeam?.name,
       awayTeamId: fixture.awayTeamId,
       awayTeamName: awayTeam?.name,
+    };
+
+    if (engine === 'indoor-netball') {
+      const netballState = state as NetballMatchState;
+      const display = getScoreboardForMatch(sport, netballState) as ReturnType<typeof import('@sportsync/sport-rules').getNetballScoreboard>;
+      summaries.push({
+        ...base,
+        homeScore: netballState.homeScore,
+        awayScore: netballState.awayScore,
+        status: netballState.status,
+        quarter: display.quarter,
+      });
+      continue;
+    }
+
+    if (engine === 'indoor-football') {
+      const footballState = state as IndoorFootballMatchState;
+      const display = getScoreboardForMatch(sport, footballState) as ReturnType<typeof import('@sportsync/sport-rules').getFootballScoreboard>;
+      summaries.push({
+        ...base,
+        homeScore: footballState.homeScore,
+        awayScore: footballState.awayScore,
+        status: footballState.status,
+        quarter: display.half,
+      });
+      continue;
+    }
+
+    if (engine === 'basketball') {
+      const basketballState = state as BasketballMatchState;
+      const display = getScoreboardForMatch(sport, basketballState) as ReturnType<typeof import('@sportsync/sport-rules').getBasketballScoreboard>;
+      summaries.push({
+        ...base,
+        homeScore: basketballState.homeScore,
+        awayScore: basketballState.awayScore,
+        status: basketballState.status,
+        quarter: display.quarter,
+      });
+      continue;
+    }
+
+    if (engine === 'touch-rugby') {
+      const rugbyState = state as TouchRugbyMatchState;
+      const display = getScoreboardForMatch(sport, rugbyState) as ReturnType<typeof import('@sportsync/sport-rules').getTouchRugbyScoreboard>;
+      summaries.push({
+        ...base,
+        homeScore: rugbyState.homeScore,
+        awayScore: rugbyState.awayScore,
+        status: rugbyState.status,
+        quarter: display.half,
+      });
+      continue;
+    }
+
+    const cricketState = state as IndoorCricketMatchState;
+    const display = getScoreboardForMatch(sport, cricketState) as ReturnType<typeof import('@sportsync/sport-rules').getScoreboardDisplay>;
+    const homeInnings = cricketState.innings.find((i) => i.teamId === fixture.homeTeamId) ?? cricketState.innings[0];
+    const awayInnings = cricketState.innings.find((i) => i.teamId === fixture.awayTeamId) ?? cricketState.innings[1];
+
+    summaries.push({
+      ...base,
       homeScore: homeInnings.totalRuns,
       awayScore: awayInnings.totalRuns,
       homeWickets: homeInnings.wickets,

@@ -1,9 +1,10 @@
 import { useEffect, useState } from 'react';
 import { api } from '@sportsync/api-client';
 import type { Court } from '@sportsync/shared';
+import { COMPETITION_SPORTS } from '@sportsync/shared';
 import { useVenue } from '../context/VenueContext';
 
-const SPORTS = ['indoor-cricket', 'indoor-netball', 'indoor-football', 'basketball', 'touch-rugby'];
+const SPORTS = COMPETITION_SPORTS.map((s) => s.id);
 
 export function CourtsPage() {
   const { venue } = useVenue();

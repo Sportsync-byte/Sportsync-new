@@ -1,4 +1,5 @@
-import type { IndoorCricketMatchState, NetballMatchState, IndoorFootballMatchState, BasketballMatchState, TouchRugbyMatchState } from '@sportsync/shared';
+import type { IndoorCricketMatchState, NetballMatchState, IndoorFootballMatchState, BasketballMatchState, TouchRugbyMatchState, SportId } from '@sportsync/shared';
+import { scoringEngineSport } from '@sportsync/shared';
 import {
   eventsFromNetballState,
   eventsFromFootballState,
@@ -21,7 +22,9 @@ export async function completeFixtureFromMatchState(
   const fixture = await FixtureModel.findOne({ matchId });
   if (!fixture || fixture.status === 'completed') return fixture;
 
-  if (sport === 'indoor-cricket') {
+  const engine = scoringEngineSport(sport as SportId);
+
+  if (engine === 'indoor-cricket') {
     const cricketState = state as IndoorCricketMatchState;
     const result = getMatchResult(cricketState);
     fixture.status = 'completed';
@@ -42,7 +45,7 @@ export async function completeFixtureFromMatchState(
     return fixture;
   }
 
-  if (sport === 'indoor-netball') {
+  if (engine === 'indoor-netball') {
     const netballState = state as NetballMatchState;
     fixture.status = 'completed';
     fixture.homeScore = netballState.homeScore;
@@ -64,7 +67,7 @@ export async function completeFixtureFromMatchState(
     return fixture;
   }
 
-  if (sport === 'indoor-football') {
+  if (engine === 'indoor-football') {
     const footballState = state as IndoorFootballMatchState;
     fixture.status = 'completed';
     fixture.homeScore = footballState.homeScore;
@@ -86,7 +89,7 @@ export async function completeFixtureFromMatchState(
     return fixture;
   }
 
-  if (sport === 'basketball') {
+  if (engine === 'basketball') {
     const basketballState = state as BasketballMatchState;
     fixture.status = 'completed';
     fixture.homeScore = basketballState.homeScore;
@@ -108,7 +111,7 @@ export async function completeFixtureFromMatchState(
     return fixture;
   }
 
-  if (sport === 'touch-rugby') {
+  if (engine === 'touch-rugby') {
     const rugbyState = state as TouchRugbyMatchState;
     fixture.status = 'completed';
     fixture.homeScore = rugbyState.homeScore;

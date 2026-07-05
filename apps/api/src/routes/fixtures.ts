@@ -1,6 +1,5 @@
 import { Router } from 'express';
-import { INDOOR_CRICKET_FORMATS, createNetballMatch, INDOOR_NETBALL_FORMAT, createFootballMatch, INDOOR_FOOTBALL_FORMAT, createBasketballMatch, BASKETBALL_FORMAT, createTouchRugbyMatch, TOUCH_RUGBY_FORMAT } from '@sportsync/shared';
-import { createMatch } from '@sportsync/sport-rules';
+import { createMatchStateForSport } from '@sportsync/sport-rules';
 import { CompetitionModel } from '../models/competition.js';
 import { FixtureModel } from '../models/fixture.js';
 import { MatchStateModel } from '../models/match-state.js';
@@ -8,6 +7,7 @@ import { checkCourtConflict } from '../services/live.js';
 import { newId } from '../utils/id.js';
 import { authMiddleware, requireRole, type AuthRequest } from '../middleware/auth.js';
 import { requireFixtureAccess } from '../middleware/venue-scope.js';
+import type { SportId } from '@sportsync/shared';
 
 export const fixturesRouter = Router();
 
@@ -85,23 +85,16 @@ fixturesRouter.post('/:fixtureId/start', ...scoreRoles, async (req: AuthRequest,
   }
 
   const matchId = newId();
-  let sport = competition.sport;
-  let state: unknown;
-
-  if (sport === 'indoor-netball') {
-    state = createNetballMatch(matchId, fixture.id, fixture.homeTeamId, fixture.awayTeamId, INDOOR_NETBALL_FORMAT);
-  } else if (sport === 'indoor-football') {
-    state = createFootballMatch(matchId, fixture.id, fixture.homeTeamId, fixture.awayTeamId, INDOOR_FOOTBALL_FORMAT);
-  } else if (sport === 'basketball') {
-    state = createBasketballMatch(matchId, fixture.id, fixture.homeTeamId, fixture.awayTeamId, BASKETBALL_FORMAT);
-  } else if (sport === 'touch-rugby') {
-    state = createTouchRugbyMatch(matchId, fixture.id, fixture.homeTeamId, fixture.awayTeamId, TOUCH_RUGBY_FORMAT);
-  } else {
-    sport = 'indoor-cricket';
-    const formatKey = competition.settings.formatKey || 'six-aside';
-    const format = INDOOR_CRICKET_FORMATS[formatKey];
-    state = createMatch(matchId, fixture.id, fixture.homeTeamId, fixture.awayTeamId, format);
-  }
+  const sport = (competition.sport || 'indoor-cricket') as SportId;
+  const formatKey = competition.settings?.formatKey;
+  const state = createMatchStateForSport(
+    sport,
+    matchId,
+    fixture.id,
+    fixture.homeTeamId,
+    fixture.awayTeamId,
+    formatKey
+  );
 
   const match = await MatchStateModel.create({
     matchId,
@@ -117,6 +110,3 @@ fixturesRouter.post('/:fixtureId/start', ...scoreRoles, async (req: AuthRequest,
 
   res.status(201).json({ fixture, match });
 });
-
-// Re-export for backwards compatibility
-export { completeFixtureFromMatchState as completeFixtureFromMatch } from '../services/match-completion.js';
