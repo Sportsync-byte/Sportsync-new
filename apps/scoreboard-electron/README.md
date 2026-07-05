@@ -22,6 +22,8 @@ SCOREBOARD_URL=http://localhost:5176/display npm run start -w @sportsync/scorebo
 KIOSK=true npm run start -w @sportsync/scoreboard-electron
 ```
 
+Kiosk mode is enabled by default. Set `KIOSK=false` for windowed mode. The app uses a single-instance lock so relaunching focuses the existing window.
+
 ## Production installer
 
 ```bash

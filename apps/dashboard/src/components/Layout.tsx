@@ -10,7 +10,8 @@ const navItems = [
   { to: '/players/search', label: 'Find Players' },
   { to: '/players', label: 'Players' },
   { to: '/live', label: 'Live Scores' },
-  { to: '/courts', label: 'Multi-Court' },
+  { to: '/courts', label: 'Courts' },
+  { to: '/courts/live', label: 'Multi-Court' },
   { to: '/scoreboards', label: 'Scoreboards' },
   { to: '/settings', label: 'Venue Settings' },
 ];
@@ -18,6 +19,12 @@ const navItems = [
 export function Layout({ children }: { children: ReactNode }) {
   const { venue, venues, setVenueId, loading } = useVenue();
   const { user, logout } = useAuth();
+
+  const scorerHref = (() => {
+    const base = import.meta.env.VITE_SCORER_URL || 'http://localhost:5174';
+    const token = localStorage.getItem('sportsync-token');
+    return token ? `${base}?token=${encodeURIComponent(token)}` : base;
+  })();
 
   return (
     <div style={{ display: 'flex', minHeight: '100vh' }}>
@@ -88,7 +95,7 @@ export function Layout({ children }: { children: ReactNode }) {
             Sign Out
           </button>
           <a
-          href="http://localhost:5174"
+          href={scorerHref}
           target="_blank"
           rel="noreferrer"
           style={{

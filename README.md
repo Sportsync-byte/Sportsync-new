@@ -156,7 +156,12 @@ Set `STRIPE_SCOREBOARD_PRICE_ID` for Stripe checkout when purchasing extra score
 
 ## Roadmap
 
-- [ ] Native scoreboard installer polish (auto-start, OS packaging CI)
+- [ ] Electron auto-start on boot (systemd / Windows startup)
+- [x] Court management in dashboard
+- [x] Scorer login for production socket auth
+- [x] SMS roster send from fixtures
+- [x] Venue scoping on billing, notifications, scoreboards, export
+- [x] Native scoreboard installer polish (single-instance, kiosk defaults)
 - [x] Football undo in scorer
 - [x] Goal-sport stats refactor (netball, football, basketball)
 - [x] SMS phone validation and player opt-out

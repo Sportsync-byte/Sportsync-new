@@ -11,6 +11,7 @@ import { PlayersPage } from './pages/PlayersPage';
 import { LiveScoresPage } from './pages/LiveScoresPage';
 import { MultiCourtLivePage } from './pages/MultiCourtLivePage';
 import { ScoreboardsPage } from './pages/ScoreboardsPage';
+import { CourtsPage } from './pages/CourtsPage';
 import { VenueSettingsPage } from './pages/VenueSettingsPage';
 
 import { PlayerProfilePage } from './pages/PlayerProfilePage';
@@ -41,7 +42,8 @@ function ProtectedRoutes() {
         <Route path="/players/:playerId" element={<PlayerProfilePage />} />
         <Route path="/p/:slug" element={<PlayerProfilePage />} />
         <Route path="/live" element={<LiveScoresPage />} />
-        <Route path="/courts" element={<MultiCourtLivePage />} />
+        <Route path="/courts/live" element={<MultiCourtLivePage />} />
+        <Route path="/courts" element={<CourtsPage />} />
         <Route path="/scoreboards" element={<ScoreboardsPage />} />
         <Route path="/settings" element={<VenueSettingsPage />} />
         <Route path="*" element={<Navigate to="/" replace />} />

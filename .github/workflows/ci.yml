@@ -40,3 +40,8 @@ jobs:
           npm run build -w @sportsync/scorer
           npm run build -w @sportsync/scoreboard
           npm run build -w @sportsync/website
+
+      - name: Verify Electron scoreboard wrapper
+        run: |
+          test -f apps/scoreboard-electron/main.js
+          test -f apps/scoreboard/dist/index.html

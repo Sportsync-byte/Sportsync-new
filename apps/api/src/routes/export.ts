@@ -20,19 +20,23 @@ function escapeCsv(value: unknown): string {
   return str;
 }
 
-async function requireExportAccess(competitionId: string, userRole?: string) {
+async function requireExportAccess(competitionId: string, user?: AuthRequest['user']) {
   const competition = await CompetitionModel.findOne({ id: competitionId });
   if (!competition) return { ok: false as const, status: 404, error: 'Competition not found' };
 
+  if (user && user.venueId !== competition.venueId) {
+    return { ok: false as const, status: 403, error: 'Access denied for this venue' };
+  }
+
   const canExport = await checkAdvancedReporting(competition.venueId);
-  if (!canExport && userRole !== 'owner') {
+  if (!canExport && user?.role !== 'owner') {
     return { ok: false as const, status: 403, error: 'Export requires Stadium tier or owner role' };
   }
   return { ok: true as const, competition };
 }
 
 exportRouter.get('/competition/:competitionId/ladder.csv', authMiddleware, async (req: AuthRequest, res) => {
-  const access = await requireExportAccess(String(req.params.competitionId), req.user?.role);
+  const access = await requireExportAccess(String(req.params.competitionId), req.user);
   if (!access.ok) {
     res.status(access.status).json({ error: access.error });
     return;
@@ -61,7 +65,7 @@ exportRouter.get('/competition/:competitionId/ladder.csv', authMiddleware, async
 });
 
 exportRouter.get('/competition/:competitionId/ladder.pdf', authMiddleware, async (req: AuthRequest, res) => {
-  const access = await requireExportAccess(String(req.params.competitionId), req.user?.role);
+  const access = await requireExportAccess(String(req.params.competitionId), req.user);
   if (!access.ok) {
     res.status(access.status).json({ error: access.error });
     return;
@@ -192,7 +196,7 @@ exportRouter.get('/match/:matchId/scorecard.pdf', async (req, res) => {
 });
 
 exportRouter.get('/competition/:competitionId/stats.csv', authMiddleware, async (req: AuthRequest, res) => {
-  const access = await requireExportAccess(String(req.params.competitionId), req.user?.role);
+  const access = await requireExportAccess(String(req.params.competitionId), req.user);
   if (!access.ok) {
     res.status(access.status).json({ error: access.error });
     return;

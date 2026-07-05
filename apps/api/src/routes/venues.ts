@@ -7,6 +7,9 @@ import { newId } from '../utils/id.js';
 import { generateLicenseKey } from '../utils/license.js';
 import { getVenueScoreboardLimit, countActiveScoreboards } from '../services/license.js';
 import { requireUserVenue } from '../middleware/venue-scope.js';
+import { checkCanAddCourt } from '../services/subscription.js';
+
+const manageRoles = [authMiddleware, requireRole('owner', 'admin', 'competition-manager')];
 
 export const venuesRouter = Router();
 
@@ -98,6 +101,66 @@ venuesRouter.post('/:venueId/extra-scoreboards', authMiddleware, requireRole('ow
 venuesRouter.get('/:venueId/courts', async (req, res) => {
   const courts = await CourtModel.find({ venueId: req.params.venueId }).sort({ displayOrder: 1 });
   res.json(courts);
+});
+
+venuesRouter.post('/:venueId/courts', ...manageRoles, async (req: AuthRequest, res) => {
+  const venueId = String(req.params.venueId);
+  if (!requireUserVenue(req, res, venueId)) return;
+
+  const courtCheck = await checkCanAddCourt(venueId);
+  if (!courtCheck.ok) {
+    res.status(403).json({ error: courtCheck.error });
+    return;
+  }
+
+  const { name, sport } = req.body;
+  if (!name) {
+    res.status(400).json({ error: 'name is required' });
+    return;
+  }
+
+  const existing = await CourtModel.find({ venueId }).sort({ displayOrder: -1 }).limit(1);
+  const displayOrder = (existing[0]?.displayOrder ?? -1) + 1;
+
+  const court = await CourtModel.create({
+    id: newId(),
+    venueId,
+    name,
+    sport,
+    displayOrder,
+  });
+
+  await VenueModel.updateOne({ id: venueId }, { $inc: { courtCount: 1 } });
+  res.status(201).json(court);
+});
+
+venuesRouter.patch('/:venueId/courts/:courtId', ...manageRoles, async (req: AuthRequest, res) => {
+  const venueId = String(req.params.venueId);
+  if (!requireUserVenue(req, res, venueId)) return;
+
+  const court = await CourtModel.findOneAndUpdate(
+    { id: req.params.courtId, venueId },
+    { $set: req.body },
+    { new: true }
+  );
+  if (!court) {
+    res.status(404).json({ error: 'Court not found' });
+    return;
+  }
+  res.json(court);
+});
+
+venuesRouter.delete('/:venueId/courts/:courtId', ...manageRoles, async (req: AuthRequest, res) => {
+  const venueId = String(req.params.venueId);
+  if (!requireUserVenue(req, res, venueId)) return;
+
+  const result = await CourtModel.deleteOne({ id: req.params.courtId, venueId });
+  if (result.deletedCount === 0) {
+    res.status(404).json({ error: 'Court not found' });
+    return;
+  }
+  await VenueModel.updateOne({ id: venueId }, { $inc: { courtCount: -1 } });
+  res.status(204).send();
 });
 
 venuesRouter.patch('/:venueId', authMiddleware, requireRole('admin', 'owner'), async (req: AuthRequest, res) => {

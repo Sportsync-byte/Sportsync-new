@@ -5,11 +5,16 @@ import { FixtureModel } from '../models/fixture.js';
 import { TeamModel } from '../models/team.js';
 import { CourtModel } from '../models/court.js';
 import { CompetitionModel } from '../models/competition.js';
+import { PlayerModel } from '../models/player.js';
 import { canVenueSendSms, sendBulkSms, formatFixtureReminder, isSmsConfigured } from '../services/sms.js';
+import { requireUserVenue, requireFixtureAccess } from '../middleware/venue-scope.js';
 
 export const notificationsRouter = Router();
 
-notificationsRouter.get('/sms/status/:venueId', authMiddleware, async (req, res) => {
+const manageRoles = [authMiddleware, requireRole('owner', 'admin', 'competition-manager')];
+
+notificationsRouter.get('/sms/status/:venueId', authMiddleware, async (req: AuthRequest, res) => {
+  if (!requireUserVenue(req, res, String(req.params.venueId))) return;
   const check = await canVenueSendSms(String(req.params.venueId));
   res.json({
     configured: isSmsConfigured(),
@@ -18,12 +23,13 @@ notificationsRouter.get('/sms/status/:venueId', authMiddleware, async (req, res)
   });
 });
 
-notificationsRouter.post('/sms/send', authMiddleware, requireRole('owner', 'admin', 'competition-manager'), async (req: AuthRequest, res) => {
+notificationsRouter.post('/sms/send', ...manageRoles, async (req: AuthRequest, res) => {
   const { venueId, to, message } = req.body;
   if (!venueId || !to?.length || !message) {
     res.status(400).json({ error: 'venueId, to (array), and message are required' });
     return;
   }
+  if (!requireUserVenue(req, res, venueId)) return;
 
   const check = await canVenueSendSms(venueId);
   if (!check.ok) {
@@ -35,14 +41,20 @@ notificationsRouter.post('/sms/send', authMiddleware, requireRole('owner', 'admi
   res.json(result);
 });
 
-notificationsRouter.post('/sms/fixture/:fixtureId', authMiddleware, requireRole('owner', 'admin', 'competition-manager'), async (req: AuthRequest, res) => {
-  const { to } = req.body;
-  if (!to?.length) {
-    res.status(400).json({ error: 'to (array of phone numbers) is required' });
-    return;
-  }
+async function collectFixturePhones(homeTeamId: string, awayTeamId: string): Promise<string[]> {
+  const players = await PlayerModel.find({
+    teamIds: { $in: [homeTeamId, awayTeamId] },
+    phone: { $exists: true, $ne: '' },
+    smsOptOut: { $ne: true },
+  });
+  return [...new Set(players.map((p) => p.phone).filter(Boolean) as string[])];
+}
 
-  const fixture = await FixtureModel.findOne({ id: req.params.fixtureId });
+notificationsRouter.post('/sms/fixture/:fixtureId', ...manageRoles, async (req: AuthRequest, res) => {
+  const fixtureId = String(req.params.fixtureId);
+  if (!(await requireFixtureAccess(req, res, fixtureId))) return;
+
+  const fixture = await FixtureModel.findOne({ id: fixtureId });
   if (!fixture) {
     res.status(404).json({ error: 'Fixture not found' });
     return;
@@ -52,6 +64,15 @@ notificationsRouter.post('/sms/fixture/:fixtureId', authMiddleware, requireRole(
   if (!check.ok) {
     res.status(403).json({ error: check.error });
     return;
+  }
+
+  let to: string[] = req.body.to ?? [];
+  if (req.body.useRoster || to.length === 0) {
+    to = await collectFixturePhones(fixture.homeTeamId, fixture.awayTeamId);
+    if (to.length === 0) {
+      res.status(400).json({ error: 'No subscribed players with phone numbers on these teams' });
+      return;
+    }
   }
 
   const [homeTeam, awayTeam, court, competition] = await Promise.all([
@@ -70,7 +91,7 @@ notificationsRouter.post('/sms/fixture/:fixtureId', authMiddleware, requireRole(
   });
 
   const result = await sendBulkSms(to, message);
-  res.json({ ...result, message });
+  res.json({ ...result, message, recipientCount: to.length });
 });
 
 notificationsRouter.post('/sms/run-scheduler', authMiddleware, requireRole('owner', 'admin'), async (_req, res) => {

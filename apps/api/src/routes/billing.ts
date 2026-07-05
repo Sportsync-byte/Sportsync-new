@@ -8,10 +8,12 @@ import {
   isStripeConfigured,
   isScoreboardBillingConfigured,
 } from '../services/billing.js';
+import { requireUserVenue } from '../middleware/venue-scope.js';
 
 export const billingRouter = Router();
 
-billingRouter.get('/status/:venueId', authMiddleware, async (req, res) => {
+billingRouter.get('/status/:venueId', authMiddleware, async (req: AuthRequest, res) => {
+  if (!requireUserVenue(req, res, String(req.params.venueId))) return;
   const status = await getBillingStatus(String(req.params.venueId));
   if (!status) {
     res.status(404).json({ error: 'Venue not found' });
@@ -26,6 +28,8 @@ billingRouter.post('/checkout', authMiddleware, requireRole('owner', 'admin'), a
     res.status(400).json({ error: 'venueId is required' });
     return;
   }
+
+  if (!requireUserVenue(req, res, venueId)) return;
 
   if (!isStripeConfigured()) {
     res.status(503).json({ error: 'Stripe billing is not configured. Set STRIPE_SECRET_KEY and STRIPE_STADIUM_PRICE_ID.' });
@@ -46,6 +50,8 @@ billingRouter.post('/checkout-scoreboards', authMiddleware, requireRole('owner',
     res.status(400).json({ error: 'venueId is required' });
     return;
   }
+
+  if (!requireUserVenue(req, res, venueId)) return;
 
   if (!isScoreboardBillingConfigured()) {
     res.status(503).json({

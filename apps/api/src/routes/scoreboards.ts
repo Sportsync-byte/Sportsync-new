@@ -5,9 +5,10 @@ import { FixtureModel } from '../models/fixture.js';
 import { MatchStateModel } from '../models/match-state.js';
 import { deviceAuthMiddleware } from '../middleware/device-auth.js';
 import type { DeviceRequest } from '../middleware/device-auth.js';
-import { authMiddleware, requireRole } from '../middleware/auth.js';
+import { authMiddleware, requireRole, type AuthRequest } from '../middleware/auth.js';
 import { enrichVenue } from '../utils/venue.js';
 import { getVenueScoreboardLimit, countActiveScoreboards } from '../services/license.js';
+import { requireUserVenue, requireScoreboardDeviceAccess } from '../middleware/venue-scope.js';
 
 export const scoreboardsRouter = Router();
 
@@ -95,14 +96,16 @@ scoreboardsRouter.post('/me/heartbeat', deviceAuthMiddleware, async (req: Device
   res.json({ ok: true, ...match });
 });
 
-scoreboardsRouter.get('/venue/:venueId', authMiddleware, async (req, res) => {
+scoreboardsRouter.get('/venue/:venueId', authMiddleware, async (req: AuthRequest, res) => {
+  if (!requireUserVenue(req, res, String(req.params.venueId))) return;
   const devices = await ScoreboardDeviceModel.find({ venueId: req.params.venueId }).sort({ name: 1 });
   const limit = await getVenueScoreboardLimit(String(req.params.venueId));
   const active = await countActiveScoreboards(String(req.params.venueId));
   res.json({ devices, limit, active });
 });
 
-scoreboardsRouter.patch('/:deviceId', authMiddleware, requireRole('owner', 'admin'), async (req, res) => {
+scoreboardsRouter.patch('/:deviceId', authMiddleware, requireRole('owner', 'admin'), async (req: AuthRequest, res) => {
+  if (!(await requireScoreboardDeviceAccess(req, res, String(req.params.deviceId)))) return;
   const device = await ScoreboardDeviceModel.findOneAndUpdate(
     { id: req.params.deviceId },
     {
@@ -121,7 +124,8 @@ scoreboardsRouter.patch('/:deviceId', authMiddleware, requireRole('owner', 'admi
   res.json(device);
 });
 
-scoreboardsRouter.delete('/:deviceId', authMiddleware, requireRole('owner', 'admin'), async (req, res) => {
+scoreboardsRouter.delete('/:deviceId', authMiddleware, requireRole('owner', 'admin'), async (req: AuthRequest, res) => {
+  if (!(await requireScoreboardDeviceAccess(req, res, String(req.params.deviceId)))) return;
   const device = await ScoreboardDeviceModel.findOneAndUpdate(
     { id: req.params.deviceId },
     { status: 'revoked' },

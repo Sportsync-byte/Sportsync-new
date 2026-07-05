@@ -47,7 +47,7 @@ export function DashboardHome() {
         <section style={{ marginTop: '2rem' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
             <h2 style={{ fontSize: '1.1rem' }}>Live Now</h2>
-            <Link to="/courts" style={{ fontSize: '0.85rem' }}>Multi-court view →</Link>
+            <Link to="/courts/live" style={{ fontSize: '0.85rem' }}>Multi-court view →</Link>
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
             {liveMatches.map((m) => {
@@ -77,7 +77,7 @@ export function DashboardHome() {
           <Link to="/competitions"><button className="primary">Manage Competitions</button></Link>
           <Link to="/teams"><button>Add Team</button></Link>
           <Link to="/live"><button>View Live Scores</button></Link>
-          <Link to="/courts"><button>Multi-Court Live</button></Link>
+          <Link to="/courts/live"><button>Multi-Court Live</button></Link>
         </div>
       </section>
     </div>

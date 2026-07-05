@@ -88,6 +88,12 @@ export const api = {
     update: (id: string, data: Partial<Venue>) =>
       request<Venue>(`/venues/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
     courts: (venueId: string) => request<Court[]>(`/venues/${venueId}/courts`),
+    createCourt: (venueId: string, data: { name: string; sport?: string }) =>
+      request<Court>(`/venues/${venueId}/courts`, { method: 'POST', body: JSON.stringify(data) }),
+    updateCourt: (venueId: string, courtId: string, data: Partial<Court>) =>
+      request<Court>(`/venues/${venueId}/courts/${courtId}`, { method: 'PATCH', body: JSON.stringify(data) }),
+    deleteCourt: (venueId: string, courtId: string) =>
+      request<void>(`/venues/${venueId}/courts/${courtId}`, { method: 'DELETE' }),
     license: (venueId: string) =>
       request<{ licenseKey: string; maxScoreboards: number; activeScoreboards: number; extraScoreboards: number; smsEnabled: boolean }>(
         `/venues/${venueId}/license`
@@ -119,11 +125,11 @@ export const api = {
         method: 'POST',
         body: JSON.stringify({ venueId, to, message }),
       }),
-    fixtureReminder: (fixtureId: string, to: string[]) =>
-      request<{ sent: number; failed: string[]; message: string }>(`/notifications/sms/fixture/${fixtureId}`, {
-        method: 'POST',
-        body: JSON.stringify({ to }),
-      }),
+    fixtureReminder: (fixtureId: string, to?: string[], useRoster?: boolean) =>
+      request<{ sent: number; failed: string[]; skipped?: string[]; message: string; recipientCount?: number }>(
+        `/notifications/sms/fixture/${fixtureId}`,
+        { method: 'POST', body: JSON.stringify({ to, useRoster }) }
+      ),
     runScheduler: () =>
       request<{ processed: number; sent: number }>('/notifications/sms/run-scheduler', { method: 'POST' }),
   },

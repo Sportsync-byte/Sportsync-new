@@ -2,7 +2,21 @@ const { app, BrowserWindow } = require('electron');
 const path = require('path');
 
 const SCOREBOARD_URL = process.env.SCOREBOARD_URL;
-const KIOSK = process.env.KIOSK === 'true';
+const KIOSK = process.env.KIOSK !== 'false';
+const isDev = !app.isPackaged;
+
+const gotLock = app.requestSingleInstanceLock();
+if (!gotLock) {
+  app.quit();
+} else {
+  app.on('second-instance', () => {
+    const win = BrowserWindow.getAllWindows()[0];
+    if (win) {
+      if (win.isMinimized()) win.restore();
+      win.focus();
+    }
+  });
+}
 
 function createWindow() {
   const win = new BrowserWindow({
@@ -24,15 +38,21 @@ function createWindow() {
   } else {
     win.loadFile(path.join(__dirname, '../scoreboard/dist/index.html'));
   }
+
+  if (isDev && process.env.DEVTOOLS === 'true') {
+    win.webContents.openDevTools({ mode: 'detach' });
+  }
 }
 
-app.whenReady().then(() => {
-  createWindow();
-  app.on('activate', () => {
-    if (BrowserWindow.getAllWindows().length === 0) createWindow();
+if (gotLock) {
+  app.whenReady().then(() => {
+    createWindow();
+    app.on('activate', () => {
+      if (BrowserWindow.getAllWindows().length === 0) createWindow();
+    });
   });
-});
 
-app.on('window-all-closed', () => {
-  if (process.platform !== 'darwin') app.quit();
-});
+  app.on('window-all-closed', () => {
+    if (process.platform !== 'darwin') app.quit();
+  });
+}

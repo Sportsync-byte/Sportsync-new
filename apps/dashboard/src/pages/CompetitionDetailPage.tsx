@@ -94,10 +94,17 @@ export function CompetitionDetailPage() {
   };
 
   const sendSmsReminder = async (fixtureId: string) => {
-    const phones = prompt('Enter phone numbers (comma-separated, E.164 format e.g. +6421...):');
-    if (!phones?.trim()) return;
-    const to = phones.split(',').map((p) => p.trim()).filter(Boolean);
+    const useRoster = confirm('Send SMS to all subscribed players on both teams? Click Cancel to enter numbers manually.');
     try {
+      if (useRoster) {
+        const result = await api.notifications.fixtureReminder(fixtureId, undefined, true);
+        const skipped = result.skipped?.length ? ` Skipped invalid: ${result.skipped.join(', ')}` : '';
+        alert(`Sent ${result.sent} of ${result.recipientCount ?? result.sent} message(s)${result.failed.length ? `. Failed: ${result.failed.join(', ')}` : ''}${skipped}`);
+        return;
+      }
+      const phones = prompt('Enter phone numbers (comma-separated, E.164 format e.g. +6421...):');
+      if (!phones?.trim()) return;
+      const to = phones.split(',').map((p) => p.trim()).filter(Boolean);
       const result = await api.notifications.fixtureReminder(fixtureId, to);
       alert(`Sent ${result.sent} message(s)${result.failed.length ? `. Failed: ${result.failed.join(', ')}` : ''}`);
     } catch (err) {

@@ -4,6 +4,7 @@ import { TeamModel } from '../models/team.js';
 import { PlayerModel } from '../models/player.js';
 import { CompetitionModel } from '../models/competition.js';
 import { FixtureModel } from '../models/fixture.js';
+import { ScoreboardDeviceModel } from '../models/scoreboard-device.js';
 
 export function requireUserVenue(req: AuthRequest, res: Response, venueId: string): boolean {
   if (!req.user) {
@@ -55,4 +56,17 @@ export async function requireFixtureAccess(req: AuthRequest, res: Response, fixt
     return false;
   }
   return requireUserVenue(req, res, fixture.venueId);
+}
+
+export async function requireScoreboardDeviceAccess(
+  req: AuthRequest,
+  res: Response,
+  deviceId: string
+): Promise<boolean> {
+  const device = await ScoreboardDeviceModel.findOne({ id: deviceId });
+  if (!device) {
+    res.status(404).json({ error: 'Scoreboard device not found' });
+    return false;
+  }
+  return requireUserVenue(req, res, device.venueId);
 }
