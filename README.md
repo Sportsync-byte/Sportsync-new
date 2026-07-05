@@ -72,9 +72,7 @@ sportsync/
 
 ```bash
 npm install
-npm run build -w @sportsync/shared
-npm run build -w @sportsync/sport-rules
-npm run build -w @sportsync/api-client
+npm run build:packages   # shared → sport-rules → api-client (required order)
 cp apps/api/.env.example apps/api/.env
 npm run seed          # Creates demo venue, 6 teams, competition, fixtures
 ```
