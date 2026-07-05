@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import type { IndoorCricketMatchState, NetballMatchState } from '@sportsync/shared';
+import { isGoalSport, goalStatLabel } from '@sportsync/shared';
 import { CompetitionModel } from '../models/competition.js';
 import { FixtureModel } from '../models/fixture.js';
 import { TeamModel } from '../models/team.js';
@@ -204,10 +205,9 @@ exportRouter.get('/competition/:competitionId/stats.csv', authMiddleware, async 
   const { competition } = access;
 
   const stats = await PlayerStatsModel.find({ competitionId: competition.id });
-  const isGoalSport = ['indoor-netball', 'indoor-football', 'basketball', 'touch-rugby'].includes(competition.sport);
-  const goalLabel = competition.sport === 'basketball' ? 'Points' : 'Goals';
+  const goalLabel = goalStatLabel(competition.sport);
 
-  if (isGoalSport) {
+  if (isGoalSport(competition.sport)) {
     const sorted = [...stats].sort((a, b) => b.goals - a.goals);
     const headers = ['PlayerId', 'Matches', goalLabel, 'Assists'];
     const rows = sorted.map((s) =>

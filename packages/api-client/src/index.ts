@@ -183,9 +183,14 @@ export const api = {
     ladder: (id: string) => request<LadderEntry[]>(`/competitions/${id}/ladder`),
     stats: (id: string) => request<PlayerStats[]>(`/stats/competition/${id}`),
     leaders: (id: string) =>
-      request<{ topRunScorer?: PlayerStats; topWicketTaker?: PlayerStats; playerCount: number }>(
-        `/stats/competition/${id}/leaders`
-      ),
+      request<{
+        topRunScorer?: PlayerStats;
+        topWicketTaker?: PlayerStats;
+        topScorer?: PlayerStats;
+        topAssists?: PlayerStats;
+        playerCount: number;
+        sport?: string;
+      }>(`/stats/competition/${id}/leaders`),
   },
   fixtures: {
     list: (venueId: string, status?: string) =>

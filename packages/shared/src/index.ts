@@ -1,4 +1,5 @@
 export * from './types.js';
+export * from './sports.js';
 export * from './indoor-cricket.js';
 export * from './indoor-netball.js';
 export * from './indoor-football.js';
