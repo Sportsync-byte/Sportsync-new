@@ -1,4 +1,4 @@
-import { recordBall, undoLastBall, createMatch, setBatters, setBowler } from './engine.js';
+import { recordBall, undoLastBall, createMatch, setBatters, setBowler, detectCricketFlashEvent } from './engine.js';
 import { INDOOR_CRICKET_FORMATS } from '@sportsync/shared';
 
 describe('indoor cricket scoring engine', () => {
@@ -65,5 +65,11 @@ describe('indoor cricket scoring engine', () => {
     const withBowler = setBowler(withBatters, 'bowler-1');
     expect(withBowler.status).toBe('innings-1');
     expect(withBowler.pendingPrompt).toBeNull();
+  });
+
+  it('detects boundary flash events', () => {
+    const state = setupMatch();
+    const afterSix = recordBall(state, { runs: 6 });
+    expect(detectCricketFlashEvent(afterSix)?.text).toBe('SIX!!');
   });
 });

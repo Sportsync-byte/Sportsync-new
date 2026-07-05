@@ -9,9 +9,12 @@ export {
   endInnings,
   getMatchResult,
   getScoreboardDisplay,
+  detectCricketFlashEvent,
   resetInningsTimer,
   tickTimer,
   type RecordBallInput,
   type MatchResult,
+  type CricketFlashEvent,
+  type CricketFlashEventType,
 } from './engine.js';
 export { aggregateMatchStats, mergeSeasonStats, type MatchPlayerStats, type PlayerSeasonStats } from './stats.js';

@@ -324,6 +324,29 @@ export function getMatchResult(state: IndoorCricketMatchState): MatchResult {
 export function getScoreboardDisplay(state: IndoorCricketMatchState) {
   const batting = getCurrentInnings(state);
   const bowling = state.innings[state.battingTeamIndex === 0 ? 1 : 0];
+  const completedRuns = batting.partnerships.reduce((sum, p) => sum + p.runs, 0);
+  const completedWickets = batting.partnerships.reduce((sum, p) => sum + p.wickets, 0);
+  const currentSkinRuns = batting.totalRuns - completedRuns;
+  const currentSkinWickets = batting.wickets - completedWickets;
+
+  const skins = Array.from({ length: state.format.partnerships }, (_, index) => {
+    const skin = index + 1;
+    const completed = batting.partnerships.find((p) => p.partnership === skin);
+    if (completed) {
+      return { skin, runs: completed.runs, wickets: completed.wickets, status: 'complete' as const };
+    }
+    if (skin === batting.currentPartnership) {
+      return { skin, runs: currentSkinRuns, wickets: currentSkinWickets, status: 'active' as const };
+    }
+    return { skin, runs: 0, wickets: 0, status: 'pending' as const };
+  });
+
+  const firstInningsTotal = state.innings[0].totalRuns;
+  const target =
+    state.battingTeamIndex === 1 && (state.status === 'innings-2' || state.status === 'completed')
+      ? firstInningsTotal + 1
+      : null;
+  const runsRequired = target != null ? Math.max(0, target - batting.totalRuns) : null;
 
   return {
     battingTeam: {
@@ -338,21 +361,70 @@ export function getScoreboardDisplay(state: IndoorCricketMatchState) {
       total: bowling.totalRuns,
       wickets: bowling.wickets,
     },
+    skins,
+    target,
+    runsRequired,
     current: {
       strikerId: batting.strikerId,
       nonStrikerId: batting.nonStrikerId,
       bowlerId: batting.bowlerId,
       partnership: batting.currentPartnership,
+      skinRuns: currentSkinRuns,
+      skinWickets: currentSkinWickets,
       over: batting.currentOver,
       ball: batting.ballsInOver,
       timerSeconds: batting.timerSeconds,
       timerRunning: batting.timerRunning,
       timerExpired: batting.timerExpired,
     },
+    format: {
+      oversPerSkin: state.format.oversPerPartnership,
+      totalSkins: state.format.partnerships,
+      powerplaysPerInnings: state.format.powerplaysPerInnings ?? 0,
+    },
     status: state.status,
     pendingPrompt: state.pendingPrompt,
     winnerTeamId: state.winnerTeamId,
   };
+}
+
+export type CricketFlashEventType = 'four' | 'five' | 'six' | 'seven' | 'hat-trick';
+
+export interface CricketFlashEvent {
+  type: CricketFlashEventType;
+  text: string;
+  durationSeconds: number;
+}
+
+function isLegalBallEvent(ball: BallEvent): boolean {
+  if (!ball.extra) return true;
+  return ball.extra.type !== 'wide' && ball.extra.type !== 'no-ball' && ball.extra.type !== 'leg-side-wide';
+}
+
+export function detectCricketFlashEvent(state: IndoorCricketMatchState): CricketFlashEvent | null {
+  const innings = getCurrentInnings(state);
+  const last = innings.ballHistory[innings.ballHistory.length - 1];
+  if (!last) return null;
+
+  if (last.dismissal) {
+    const legalWickets = innings.ballHistory
+      .filter((ball) => ball.bowlerId === last.bowlerId && ball.dismissal && isLegalBallEvent(ball))
+      .slice(-3);
+    if (
+      legalWickets.length === 3 &&
+      legalWickets.every((ball) => ball.dismissal)
+    ) {
+      return { type: 'hat-trick', text: 'HAT TRICK!!', durationSeconds: 3 };
+    }
+    return null;
+  }
+
+  const boundaryRuns = last.runs;
+  if (boundaryRuns === 7) return { type: 'seven', text: 'SEVEN!!', durationSeconds: 3 };
+  if (boundaryRuns === 6) return { type: 'six', text: 'SIX!!', durationSeconds: 3 };
+  if (boundaryRuns === 5) return { type: 'five', text: 'FIVE!!', durationSeconds: 3 };
+  if (boundaryRuns === 4) return { type: 'four', text: 'FOUR!!', durationSeconds: 3 };
+  return null;
 }
 
 export function resetInningsTimer(state: IndoorCricketMatchState): IndoorCricketMatchState {

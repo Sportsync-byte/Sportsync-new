@@ -1,9 +1,9 @@
 const EXTRAS = [
-  { type: 'wide', label: 'Wide', runs: 1 },
-  { type: 'no-ball', label: 'No Ball', runs: 1 },
-  { type: 'leg-side-wide', label: 'Leg Side Wide', runs: 1 },
+  { type: 'wide', label: 'Wide (+2)', runs: 2 },
+  { type: 'no-ball', label: 'No Ball (+2)', runs: 2 },
+  { type: 'leg-side-wide', label: 'Leg Side Wide (+2)', runs: 2 },
   { type: 'bye', label: 'Byes', runs: 1 },
-  { type: 'leg-bye', label: 'Leg Byes', runs: 1 },
+  { type: 'leg-bye', label: 'Leg Byes (+2)', runs: 2 },
 ] as const;
 
 interface ExtrasPadProps {

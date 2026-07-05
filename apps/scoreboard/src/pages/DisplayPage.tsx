@@ -6,6 +6,7 @@ import { getScoreboardDisplay, getNetballScoreboard, getFootballScoreboard, getB
 import { api } from '@sportsync/api-client';
 import { scoreboardApi, getDeviceMeta, clearDeviceSession } from '../lib/device';
 import { enterKioskMode, isFullscreen } from '../lib/kiosk';
+import { IndoorCricketPublicBoard } from '../components/IndoorCricketPublicBoard';
 
 export function DisplayPage() {
   const [matchId, setMatchId] = useState<string | null>(null);
@@ -96,7 +97,8 @@ export function DisplayPage() {
 function CricketDisplay({ matchId, sport, kioskButton }: { matchId: string; sport: string; kioskButton: ReactNode }) {
   const [state, setState] = useState<IndoorCricketMatchState | null>(null);
   const [teamNames, setTeamNames] = useState<Record<string, string>>({});
-  const [venueName, setVenueName] = useState('');
+  const [playerNames, setPlayerNames] = useState<Record<string, string>>({});
+  const [venue, setVenue] = useState<{ name: string; branding: { primaryColor?: string; secondaryColor?: string; logoUrl?: string; sponsorBannerUrl?: string } } | null>(null);
 
   useEffect(() => {
     let socket: ReturnType<typeof io> | null = null;
@@ -104,12 +106,14 @@ function CricketDisplay({ matchId, sport, kioskButton }: { matchId: string; spor
       const match = doc as { state: IndoorCricketMatchState; venueId?: string };
       setState(match.state);
       if (match.venueId) {
-        const [venue, teams] = await Promise.all([
+        const [venueData, teams, players] = await Promise.all([
           api.venues.get(match.venueId),
           api.teams.list(match.venueId),
+          api.players.list(match.venueId),
         ]);
-        setVenueName(venue.name);
+        setVenue(venueData);
         setTeamNames(Object.fromEntries(teams.map((t) => [t.id, t.name])));
+        setPlayerNames(Object.fromEntries(players.map((p) => [p.id, p.displayName])));
       }
     });
     socket = io('/', { transports: ['websocket', 'polling'] });
@@ -119,26 +123,23 @@ function CricketDisplay({ matchId, sport, kioskButton }: { matchId: string; spor
   }, [matchId]);
 
   if (!state) return null;
-  const display = getScoreboardDisplay(state);
-  const batting = display.battingTeam;
-  const bowling = display.bowlingTeam;
 
   return (
-    <div style={{ minHeight: '100vh', background: 'linear-gradient(180deg, #1a2332 0%, #0a0e12 100%)', color: '#fff', padding: '2rem' }}>
-      <div style={{ textAlign: 'center', marginBottom: '2rem', color: '#7d8fa3' }}>{venueName} · {sportDisplayName(sport as SportId).toUpperCase()}</div>
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '2rem', maxWidth: 900, margin: '0 auto' }}>
-        <div style={{ textAlign: 'center' }}>
-          <div style={{ fontSize: '0.9rem', color: '#7d8fa3' }}>{teamNames[batting.teamId] || 'Batting'}</div>
-          <div style={{ fontSize: '6rem', fontWeight: 900, color: '#00d4aa' }}>{batting.total}/{batting.wickets}</div>
-        </div>
-        <div style={{ textAlign: 'center' }}>
-          <div style={{ fontSize: '0.9rem', color: '#7d8fa3' }}>{teamNames[bowling.teamId] || 'Bowling'}</div>
-          <div style={{ fontSize: '3rem', fontWeight: 700 }}>{bowling.total}/{bowling.wickets}</div>
-          <div style={{ color: '#7d8fa3' }}>Over {display.current.over}.{display.current.ball}</div>
-        </div>
-      </div>
+    <>
+      <IndoorCricketPublicBoard
+        state={state}
+        labels={{
+          venueName: venue ? `${venue.name} · ${sportDisplayName(sport as SportId).toUpperCase()}` : sportDisplayName(sport as SportId).toUpperCase(),
+          logoUrl: venue?.branding.logoUrl,
+          sponsorBannerUrl: venue?.branding.sponsorBannerUrl,
+          teamNames,
+          playerNames,
+          primaryColor: venue?.branding.primaryColor,
+          secondaryColor: venue?.branding.secondaryColor,
+        }}
+      />
       {kioskButton}
-    </div>
+    </>
   );
 }
 

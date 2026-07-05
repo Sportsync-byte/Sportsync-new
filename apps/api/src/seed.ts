@@ -128,7 +128,7 @@ async function seed() {
     status: 'active',
     teamIds: teams.map((t) => t.id),
     settings: {
-      formatKey: 'six-aside',
+      formatKey: 'eight-aside',
       pointsForWin: 4,
       pointsForTie: 2,
       pointsForLoss: 0,

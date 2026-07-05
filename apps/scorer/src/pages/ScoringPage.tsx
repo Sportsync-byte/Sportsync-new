@@ -71,11 +71,28 @@ export function ScoringPage() {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
-      <header style={{ padding: '0.75rem 1rem', background: 'var(--surface)', borderBottom: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between' }}>
-        <span style={{ fontWeight: 700 }}>SportSync Scorer</span>
-        <span style={{ fontSize: '0.75rem', padding: '0.25rem 0.6rem', borderRadius: 999, background: connected ? 'rgba(0,212,170,0.15)' : 'rgba(255,71,87,0.15)', color: connected ? 'var(--accent)' : 'var(--danger)' }}>
-          {connected ? 'Connected' : 'Offline — queuing'}
-        </span>
+      <header style={{ padding: '0.75rem 1rem', background: 'var(--surface)', borderBottom: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
+        <span style={{ fontWeight: 700 }}>Umpire Console</span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+          <button
+            type="button"
+            onClick={() => window.open(`${window.location.origin}/display/${matchId}`, '_blank', 'noopener,noreferrer')}
+            style={{
+              padding: '0.45rem 0.75rem',
+              borderRadius: 8,
+              border: '1px solid var(--border)',
+              background: 'var(--surface-elevated)',
+              color: 'var(--text)',
+              fontSize: '0.8rem',
+              fontWeight: 600,
+            }}
+          >
+            Open Public Display
+          </button>
+          <span style={{ fontSize: '0.75rem', padding: '0.25rem 0.6rem', borderRadius: 999, background: connected ? 'rgba(0,212,170,0.15)' : 'rgba(255,71,87,0.15)', color: connected ? 'var(--accent)' : 'var(--danger)' }}>
+            {connected ? 'Connected' : 'Offline — queuing'}
+          </span>
+        </div>
       </header>
 
       <Scoreboard state={matchState} teamNames={teamNames} playerNames={Object.fromEntries(players.map((p) => [p.id, p.displayName]))} />
@@ -111,7 +128,7 @@ export function ScoringPage() {
 
       {matchState.pendingPrompt === 'partnership' && (
         <PlayerPicker
-          title={`Select batters for partnership ${innings.currentPartnership + 1}`}
+          title={`Select batters for skin ${innings.currentPartnership + 1}`}
           players={battingPlayers.filter((p) => !matchState.dismissedBatters.includes(p.id))}
           count={2}
           onSelect={(ids) => emitSetup({ matchId, action: 'next-partnership', strikerId: ids[0], nonStrikerId: ids[1] })}

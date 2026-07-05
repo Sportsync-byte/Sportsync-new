@@ -61,7 +61,7 @@ export function MatchSelectPage() {
     <div style={{ padding: '1.5rem', maxWidth: 600, margin: '0 auto' }}>
       <h1 style={{ fontSize: '1.5rem', marginBottom: '0.5rem' }}>SportSync Scorer</h1>
       <p style={{ color: 'var(--text-muted)', marginBottom: '1.5rem' }}>
-        Start and score live matches here. Select a fixture below — scheduled matches start scoring; live matches resume where you left off.
+        Start and score live matches here. Open <strong>Public Display</strong> on a second screen for players and spectators.
       </p>
 
       {fixtures.length === 0 ? (

@@ -6,8 +6,10 @@ export interface IndoorCricketFormatConfig {
   totalOvers: number;
   partnerships: number;
   oversPerPartnership: number;
-  /** Countdown duration per innings in seconds (default 20 minutes) */
+  /** Countdown duration per innings in seconds (default 30 minutes for 8-a-side) */
   inningsDurationSeconds: number;
+  /** Batting/bowling powerplays available per innings */
+  powerplaysPerInnings?: number;
   /** Final partnership uses special batter/bowler selection rules */
   finalPartnershipSpecialRules?: boolean;
 }
@@ -27,10 +29,11 @@ export const INDOOR_CRICKET_FORMATS: Record<
   'eight-aside': {
     format: 'eight-aside',
     playersPerSide: 8,
-    totalOvers: 16,
-    partnerships: 4,
+    totalOvers: 32,
+    partnerships: 8,
     oversPerPartnership: 4,
-    inningsDurationSeconds: 1200,
+    inningsDurationSeconds: 1800,
+    powerplaysPerInnings: 2,
   },
   'asia-cup': {
     format: 'asia-cup',
