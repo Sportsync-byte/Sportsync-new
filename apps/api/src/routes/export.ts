@@ -200,11 +200,12 @@ exportRouter.get('/competition/:competitionId/stats.csv', authMiddleware, async 
   const { competition } = access;
 
   const stats = await PlayerStatsModel.find({ competitionId: competition.id });
-  const isNetball = competition.sport === 'indoor-netball';
+  const isGoalSport = ['indoor-netball', 'indoor-football', 'basketball'].includes(competition.sport);
+  const goalLabel = competition.sport === 'basketball' ? 'Points' : 'Goals';
 
-  if (isNetball) {
+  if (isGoalSport) {
     const sorted = [...stats].sort((a, b) => b.goals - a.goals);
-    const headers = ['PlayerId', 'Matches', 'Goals', 'Assists'];
+    const headers = ['PlayerId', 'Matches', goalLabel, 'Assists'];
     const rows = sorted.map((s) =>
       [s.playerId, s.matchesPlayed, s.goals, s.assists].map(escapeCsv).join(',')
     );

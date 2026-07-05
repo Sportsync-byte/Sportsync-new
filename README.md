@@ -110,7 +110,7 @@ npm run dev:scoreboard  # Terminal 5 — http://localhost:5176 (TV display)
 - **Venue licence keys** — one key per venue, activates scoreboard displays
 - **Scoreboard PC app** — install on TV hardware, pairs via licence key over internet
 - **SMS fixture reminders** — Stadium tier (Twilio), manual send + automated scheduler
-- **Automated SMS reminders** — configurable hours before fixture, player phone numbers
+- **Automated SMS reminders** — configurable hours before fixture, player phone numbers, opt-out per player
 - **Stripe checkout for extra scoreboard licences** — purchase add-ons from dashboard
 - **Indoor football** — 5-a-side scoring, scorer UI, TV scoreboard display
 - **Basketball** — 4-quarter scoring with 2pt/3pt baskets, scorer and scoreboard UI
@@ -157,6 +157,10 @@ Set `STRIPE_SCOREBOARD_PRICE_ID` for Stripe checkout when purchasing extra score
 ## Roadmap
 
 - [ ] Native scoreboard installer polish (auto-start, OS packaging CI)
+- [x] Football undo in scorer
+- [x] Goal-sport stats refactor (netball, football, basketball)
+- [x] SMS phone validation and player opt-out
+- [x] GitHub Actions CI pipeline
 - [x] Additional sports modules (basketball)
 - [x] Native scoreboard installer (Electron)
 - [x] Auth hardening on write routes

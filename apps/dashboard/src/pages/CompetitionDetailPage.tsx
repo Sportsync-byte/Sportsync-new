@@ -20,6 +20,7 @@ export function CompetitionDetailPage() {
   const courtMap = Object.fromEntries(courts.map((c) => [c.id, c.name]));
   const playerMap = Object.fromEntries(players.map((p) => [p.id, p.displayName]));
   const isGoalSport = competition?.sport === 'indoor-netball' || competition?.sport === 'indoor-football' || competition?.sport === 'basketball';
+  const goalStatLabel = competition?.sport === 'basketball' ? 'Points' : 'Goals';
 
   const load = async () => {
     if (!competitionId) return;
@@ -227,7 +228,7 @@ export function CompetitionDetailPage() {
                 <th style={thStyle}>M</th>
                 {isGoalSport ? (
                   <>
-                    <th style={thStyle}>Goals</th>
+                    <th style={thStyle}>{goalStatLabel}</th>
                     <th style={thStyle}>Assists</th>
                   </>
                 ) : (

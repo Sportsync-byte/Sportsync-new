@@ -3,6 +3,7 @@ import { SOCKET_EVENTS } from '@sportsync/shared';
 import {
   startFootballMatch,
   recordFootballGoal,
+  undoLastFootballGoal,
   endFootballHalf,
   getFootballScoreboard,
 } from '@sportsync/sport-rules';
@@ -59,6 +60,14 @@ export function registerFootballHandlers(io: Server) {
       const doc = await MatchStateModel.findOne({ matchId });
       if (!doc || doc.sport !== 'indoor-football') return;
       const state = endFootballHalf(doc.state as IndoorFootballMatchState);
+      await persistFootball(io, matchId, state, doc.venueId);
+    });
+
+    socket.on(SOCKET_EVENTS.FOOTBALL_UNDO, async (matchId: string) => {
+      if (rejectUnauthorizedScore(socket)) return;
+      const doc = await MatchStateModel.findOne({ matchId });
+      if (!doc || doc.sport !== 'indoor-football') return;
+      const state = undoLastFootballGoal(doc.state as IndoorFootballMatchState);
       await persistFootball(io, matchId, state, doc.venueId);
     });
 

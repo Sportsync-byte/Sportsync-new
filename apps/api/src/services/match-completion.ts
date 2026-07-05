@@ -1,10 +1,16 @@
 import type { IndoorCricketMatchState, NetballMatchState, IndoorFootballMatchState, BasketballMatchState } from '@sportsync/shared';
+import {
+  eventsFromNetballState,
+  eventsFromFootballState,
+  eventsFromBasketballState,
+} from '@sportsync/sport-rules';
 import { getMatchResult } from '@sportsync/sport-rules';
 import { FixtureModel } from '../models/fixture.js';
 import { CompetitionModel } from '../models/competition.js';
 import { MatchStateModel } from '../models/match-state.js';
 import { buildLadderFromFixtures } from './ladder.js';
-import { persistMatchStats, persistNetballStats } from './stats.js';
+import { persistMatchStats } from './stats.js';
+import { persistGoalSportStats } from './goal-sport-stats.js';
 
 export async function completeFixtureFromMatchState(
   matchId: string,
@@ -48,7 +54,11 @@ export async function completeFixtureFromMatchState(
       const fixtures = await FixtureModel.find({ competitionId: competition.id });
       const ladder = buildLadderFromFixtures(competition, fixtures);
       await CompetitionModel.updateOne({ id: competition.id }, { ladder });
-      await persistNetballStats(netballState, fixture.venueId, fixture.competitionId);
+      await persistGoalSportStats(
+        eventsFromNetballState(netballState),
+        fixture.venueId,
+        fixture.competitionId
+      );
     }
     return fixture;
   }
@@ -66,7 +76,11 @@ export async function completeFixtureFromMatchState(
       const fixtures = await FixtureModel.find({ competitionId: competition.id });
       const ladder = buildLadderFromFixtures(competition, fixtures);
       await CompetitionModel.updateOne({ id: competition.id }, { ladder });
-      await persistNetballStats(footballState as unknown as NetballMatchState, fixture.venueId, fixture.competitionId);
+      await persistGoalSportStats(
+        eventsFromFootballState(footballState),
+        fixture.venueId,
+        fixture.competitionId
+      );
     }
     return fixture;
   }
@@ -84,7 +98,11 @@ export async function completeFixtureFromMatchState(
       const fixtures = await FixtureModel.find({ competitionId: competition.id });
       const ladder = buildLadderFromFixtures(competition, fixtures);
       await CompetitionModel.updateOne({ id: competition.id }, { ladder });
-      await persistNetballStats(basketballState as unknown as NetballMatchState, fixture.venueId, fixture.competitionId);
+      await persistGoalSportStats(
+        eventsFromBasketballState(basketballState),
+        fixture.venueId,
+        fixture.competitionId
+      );
     }
     return fixture;
   }

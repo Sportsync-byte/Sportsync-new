@@ -54,6 +54,24 @@ export function endFootballHalf(state: IndoorFootballMatchState): IndoorFootball
   return next;
 }
 
+export function undoLastFootballGoal(state: IndoorFootballMatchState): IndoorFootballMatchState {
+  const next = structuredClone(state);
+  const goal = next.goalHistory.pop();
+  if (!goal) return next;
+
+  const isHome = goal.teamId === next.homeTeamId;
+  if (isHome) next.homeScore = Math.max(0, next.homeScore - 1);
+  else next.awayScore = Math.max(0, next.awayScore - 1);
+
+  const half = next.halfScores.find((h) => h.half === goal.half);
+  if (half) {
+    if (isHome) half.homeGoals = Math.max(0, half.homeGoals - 1);
+    else half.awayGoals = Math.max(0, half.awayGoals - 1);
+  }
+
+  return next;
+}
+
 export function getFootballScoreboard(state: IndoorFootballMatchState) {
   return {
     homeTeamId: state.homeTeamId,

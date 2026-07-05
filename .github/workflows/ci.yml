@@ -1,0 +1,42 @@
+name: CI
+
+on:
+  push:
+    branches: [main, 'cursor/**']
+  pull_request:
+    branches: [main, 'cursor/**']
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build shared packages
+        run: |
+          npm run build -w @sportsync/shared
+          npm run build -w @sportsync/sport-rules
+          npm run build -w @sportsync/api-client
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Unit tests
+        run: |
+          npm test -w @sportsync/shared
+          npm test -w @sportsync/sport-rules
+
+      - name: Build frontends
+        run: |
+          npm run build -w @sportsync/dashboard
+          npm run build -w @sportsync/scorer
+          npm run build -w @sportsync/scoreboard
+          npm run build -w @sportsync/website

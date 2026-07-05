@@ -7,6 +7,7 @@ import { newId } from '../utils/id.js';
 import { uniquePlayerSlug } from '../utils/slug.js';
 import { authMiddleware, requireRole, type AuthRequest } from '../middleware/auth.js';
 import { requirePlayerAccess, requireUserVenue } from '../middleware/venue-scope.js';
+import { normalizePhone } from '../services/sms.js';
 
 export const playersRouter = Router();
 
@@ -103,6 +104,14 @@ playersRouter.post('/', ...manageRoles, async (req: AuthRequest, res) => {
   }
   if (!requireUserVenue(req, res, venueId)) return;
 
+  if (phone) {
+    const normalized = normalizePhone(phone);
+    if (!normalized) {
+      res.status(400).json({ error: 'Phone must be in E.164 format (e.g. +64211234567)' });
+      return;
+    }
+  }
+
   const name = displayName || `${firstName} ${lastName}`;
   const slug = await uniquePlayerSlug(venueId, name, async (vId, s) => {
     const existing = await PlayerModel.findOne({ venueId: vId, slug: s });
@@ -117,16 +126,27 @@ playersRouter.post('/', ...manageRoles, async (req: AuthRequest, res) => {
     displayName: name,
     slug,
     teamIds: teamIds || [],
-    ...(phone ? { phone } : {}),
+    ...(phone ? { phone: normalizePhone(phone) } : {}),
   });
   res.status(201).json(player);
 });
 
 playersRouter.patch('/:playerId', ...manageRoles, async (req: AuthRequest, res) => {
   if (!(await requirePlayerAccess(req, res, String(req.params.playerId)))) return;
+
+  const updates = { ...req.body };
+  if (updates.phone !== undefined && updates.phone !== '') {
+    const normalized = normalizePhone(String(updates.phone));
+    if (!normalized) {
+      res.status(400).json({ error: 'Phone must be in E.164 format (e.g. +64211234567)' });
+      return;
+    }
+    updates.phone = normalized;
+  }
+
   const player = await PlayerModel.findOneAndUpdate(
     { id: req.params.playerId },
-    { $set: req.body },
+    { $set: updates },
     { new: true }
   );
   if (!player) {

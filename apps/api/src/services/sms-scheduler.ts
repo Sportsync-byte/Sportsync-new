@@ -77,6 +77,7 @@ async function collectFixturePhones(homeTeamId: string, awayTeamId: string): Pro
   const players = await PlayerModel.find({
     teamIds: { $in: [homeTeamId, awayTeamId] },
     phone: { $exists: true, $ne: '' },
+    smsOptOut: { $ne: true },
   });
   return [...new Set(players.map((p) => p.phone).filter(Boolean) as string[])];
 }

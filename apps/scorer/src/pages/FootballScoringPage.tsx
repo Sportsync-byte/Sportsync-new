@@ -7,7 +7,7 @@ import { TimerBar } from '../components/TimerBar';
 
 export function FootballScoringPage() {
   const { matchId } = useParams<{ matchId: string }>();
-  const { connected, matchState, startMatch, recordGoal, endHalf, emitTimer } = useFootballSocket(matchId ?? null);
+  const { connected, matchState, startMatch, recordGoal, undoLastGoal, endHalf, emitTimer } = useFootballSocket(matchId ?? null);
   const [players, setPlayers] = useState<Player[]>([]);
   const [teamNames, setTeamNames] = useState<Record<string, string>>({});
   const [scoringTeam, setScoringTeam] = useState<'home' | 'away'>('home');
@@ -118,6 +118,9 @@ export function FootballScoringPage() {
             style={{ padding: '1.5rem', fontSize: '1.5rem', fontWeight: 800, background: 'var(--accent)', color: '#0a0e12', borderRadius: 12 }}
           >
             GOAL
+          </button>
+          <button onClick={undoLastGoal} style={{ padding: '1rem', borderRadius: 8, border: '1px solid var(--border)' }}>
+            Undo Last Goal
           </button>
           <button onClick={endHalf} style={{ padding: '1rem', borderRadius: 8, border: '1px solid var(--border)' }}>End Half</button>
         </div>

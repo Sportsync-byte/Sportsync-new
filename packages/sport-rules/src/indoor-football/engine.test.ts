@@ -1,5 +1,5 @@
 import { createFootballMatch } from '@sportsync/shared';
-import { startFootballMatch, recordFootballGoal, endFootballHalf } from './engine.js';
+import { startFootballMatch, recordFootballGoal, endFootballHalf, undoLastFootballGoal } from './engine.js';
 
 describe('indoor football engine', () => {
   it('records goals and completes match after two halves', () => {
@@ -35,5 +35,16 @@ describe('indoor football engine', () => {
 
     expect(state.status).toBe('completed');
     expect(state.winnerTeamId).toBeUndefined();
+  });
+
+  it('undoes the last goal', () => {
+    let state = createFootballMatch('m1', 'f1', 'home', 'away');
+    state = startFootballMatch(state);
+    state = recordFootballGoal(state, 'home', 'p1');
+    state = recordFootballGoal(state, 'away', 'p2', 'p3');
+    state = undoLastFootballGoal(state);
+    expect(state.awayScore).toBe(0);
+    state = undoLastFootballGoal(state);
+    expect(state.homeScore).toBe(0);
   });
 });

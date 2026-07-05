@@ -135,6 +135,7 @@ export interface Player {
   displayName: string;
   slug: string;
   phone?: string;
+  smsOptOut?: boolean;
   teamIds: string[];
 }
 
@@ -266,6 +267,7 @@ export const SOCKET_EVENTS = {
   FOOTBALL_GOAL: 'football:goal',
   FOOTBALL_START: 'football:start',
   FOOTBALL_END_HALF: 'football:end-half',
+  FOOTBALL_UNDO: 'football:undo',
   FOOTBALL_TIMER: 'football:timer',
   BASKETBALL_BASKET: 'basketball:basket',
   BASKETBALL_UNDO: 'basketball:undo',

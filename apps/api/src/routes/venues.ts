@@ -1,11 +1,12 @@
 import { Router } from 'express';
 import { VenueModel } from '../models/venue.js';
 import { CourtModel } from '../models/court.js';
-import { authMiddleware, requireRole } from '../middleware/auth.js';
+import { authMiddleware, requireRole, type AuthRequest } from '../middleware/auth.js';
 import { enrichVenue } from '../utils/venue.js';
 import { newId } from '../utils/id.js';
 import { generateLicenseKey } from '../utils/license.js';
 import { getVenueScoreboardLimit, countActiveScoreboards } from '../services/license.js';
+import { requireUserVenue } from '../middleware/venue-scope.js';
 
 export const venuesRouter = Router();
 
@@ -61,7 +62,8 @@ venuesRouter.post('/', authMiddleware, requireRole('admin', 'owner'), async (req
   res.status(201).json(enrichVenue(venue.toObject()));
 });
 
-venuesRouter.get('/:venueId/license', authMiddleware, requireRole('owner', 'admin'), async (req, res) => {
+venuesRouter.get('/:venueId/license', authMiddleware, requireRole('owner', 'admin'), async (req: AuthRequest, res) => {
+  if (!requireUserVenue(req, res, String(req.params.venueId))) return;
   const venue = await VenueModel.findOne({ id: req.params.venueId });
   if (!venue) {
     res.status(404).json({ error: 'Venue not found' });
@@ -78,7 +80,8 @@ venuesRouter.get('/:venueId/license', authMiddleware, requireRole('owner', 'admi
   });
 });
 
-venuesRouter.post('/:venueId/extra-scoreboards', authMiddleware, requireRole('owner', 'admin'), async (req, res) => {
+venuesRouter.post('/:venueId/extra-scoreboards', authMiddleware, requireRole('owner', 'admin'), async (req: AuthRequest, res) => {
+  if (!requireUserVenue(req, res, String(req.params.venueId))) return;
   const { count = 1 } = req.body;
   const venue = await VenueModel.findOneAndUpdate(
     { id: req.params.venueId },
@@ -97,7 +100,8 @@ venuesRouter.get('/:venueId/courts', async (req, res) => {
   res.json(courts);
 });
 
-venuesRouter.patch('/:venueId', authMiddleware, requireRole('admin', 'owner'), async (req, res) => {
+venuesRouter.patch('/:venueId', authMiddleware, requireRole('admin', 'owner'), async (req: AuthRequest, res) => {
+  if (!requireUserVenue(req, res, String(req.params.venueId))) return;
   const venue = await VenueModel.findOneAndUpdate(
     { id: req.params.venueId },
     { $set: req.body },

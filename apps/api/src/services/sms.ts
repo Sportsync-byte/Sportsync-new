@@ -7,6 +7,16 @@ const accountSid = process.env.TWILIO_ACCOUNT_SID;
 const authToken = process.env.TWILIO_AUTH_TOKEN;
 const fromNumber = process.env.TWILIO_FROM_NUMBER;
 
+export function isValidE164Phone(phone: string): boolean {
+  return /^\+[1-9]\d{6,14}$/.test(phone.trim());
+}
+
+export function normalizePhone(phone: string): string | null {
+  const trimmed = phone.trim();
+  if (!isValidE164Phone(trimmed)) return null;
+  return trimmed;
+}
+
 export function isSmsConfigured(): boolean {
   return Boolean(accountSid && authToken && fromNumber);
 }
@@ -46,10 +56,16 @@ export async function sendSms(to: string, body: string): Promise<{ sid: string }
 export async function sendBulkSms(
   recipients: string[],
   body: string
-): Promise<{ sent: number; failed: string[] }> {
+): Promise<{ sent: number; failed: string[]; skipped: string[] }> {
   const failed: string[] = [];
+  const skipped: string[] = [];
   let sent = 0;
-  for (const phone of recipients) {
+  for (const raw of recipients) {
+    const phone = normalizePhone(raw);
+    if (!phone) {
+      skipped.push(raw);
+      continue;
+    }
     try {
       await sendSms(phone, body);
       sent += 1;
@@ -57,7 +73,7 @@ export async function sendBulkSms(
       failed.push(phone);
     }
   }
-  return { sent, failed };
+  return { sent, failed, skipped };
 }
 
 export function formatFixtureReminder(data: {

@@ -140,6 +140,8 @@ export const api = {
       request<Player[]>(`/players/venue/${venueId}${teamId ? `?teamId=${teamId}` : ''}`),
     create: (data: Partial<Player> & { venueId: string; firstName: string; lastName: string }) =>
       request<Player>('/players', { method: 'POST', body: JSON.stringify(data) }),
+    update: (id: string, data: Partial<Player>) =>
+      request<Player>(`/players/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
     delete: (id: string) => request<void>(`/players/${id}`, { method: 'DELETE' }),
     publicProfile: (playerId: string) => request<import('@sportsync/shared').PlayerProfile>(`/players/public/${playerId}`),
     publicProfileBySlug: (slug: string, venueId?: string) =>

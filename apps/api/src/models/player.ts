@@ -9,6 +9,7 @@ const playerSchema = new Schema(
     displayName: { type: String, required: true },
     slug: { type: String, required: true, index: true },
     phone: String,
+    smsOptOut: { type: Boolean, default: false },
     teamIds: [{ type: String }],
   },
   { timestamps: true }
@@ -26,5 +27,6 @@ export interface PlayerDocument {
   displayName: string;
   slug: string;
   phone?: string;
+  smsOptOut?: boolean;
   teamIds: string[];
 }

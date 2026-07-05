@@ -28,17 +28,26 @@ export function PlayersPage() {
 
   const createPlayer = async () => {
     if (!venue || !firstName || !lastName) return;
-    await api.players.create({
-      venueId: venue.id,
-      firstName,
-      lastName,
-      phone: phone || undefined,
-      teamIds: teamId ? [teamId] : [],
-    });
-    setFirstName('');
-    setLastName('');
-    setPhone('');
-    setShowForm(false);
+    try {
+      await api.players.create({
+        venueId: venue.id,
+        firstName,
+        lastName,
+        phone: phone || undefined,
+        teamIds: teamId ? [teamId] : [],
+      });
+      setFirstName('');
+      setLastName('');
+      setPhone('');
+      setShowForm(false);
+      load();
+    } catch (err) {
+      alert(err instanceof Error ? err.message : 'Failed to create player');
+    }
+  };
+
+  const toggleSmsOptOut = async (player: Player) => {
+    await api.players.update(player.id, { smsOptOut: !player.smsOptOut });
     load();
   };
 
@@ -74,6 +83,7 @@ export function PlayersPage() {
             <tr style={{ borderBottom: '1px solid var(--border)' }}>
               <th style={thStyle}>Name</th>
               <th style={thStyle}>Phone</th>
+              <th style={thStyle}>SMS</th>
               <th style={thStyle}>Team</th>
             </tr>
           </thead>
@@ -84,6 +94,23 @@ export function PlayersPage() {
                   <Link to={p.slug ? `/p/${p.slug}` : `/players/${p.id}`} style={{ fontWeight: 600 }}>{p.displayName}</Link>
                 </td>
                 <td style={tdStyle}>{p.phone || '—'}</td>
+                <td style={tdStyle}>
+                  {p.phone ? (
+                    <button
+                      onClick={() => toggleSmsOptOut(p)}
+                      style={{
+                        padding: '0.25rem 0.5rem',
+                        borderRadius: 6,
+                        fontSize: '0.75rem',
+                        background: p.smsOptOut ? 'var(--surface-elevated)' : 'var(--accent)',
+                        color: p.smsOptOut ? 'var(--text-muted)' : '#0a0e12',
+                        border: '1px solid var(--border)',
+                      }}
+                    >
+                      {p.smsOptOut ? 'Opted out' : 'Subscribed'}
+                    </button>
+                  ) : '—'}
+                </td>
                 <td style={tdStyle}>{p.teamIds.map((id) => teamMap[id]).filter(Boolean).join(', ') || '—'}</td>
               </tr>
             ))}

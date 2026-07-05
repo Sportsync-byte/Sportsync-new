@@ -42,6 +42,10 @@ export function useFootballSocket(matchId: string | null) {
     if (matchId) socketRef.current?.emit(SOCKET_EVENTS.FOOTBALL_END_HALF, matchId);
   }, [matchId]);
 
+  const undoLastGoal = useCallback(() => {
+    if (matchId) socketRef.current?.emit(SOCKET_EVENTS.FOOTBALL_UNDO, matchId);
+  }, [matchId]);
+
   const emitTimer = useCallback(
     (timerSeconds: number, timerRunning: boolean) => {
       if (matchId) {
@@ -51,5 +55,5 @@ export function useFootballSocket(matchId: string | null) {
     [matchId]
   );
 
-  return { connected, matchState, startMatch, recordGoal, endHalf, emitTimer };
+  return { connected, matchState, startMatch, recordGoal, undoLastGoal, endHalf, emitTimer };
 }
