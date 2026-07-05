@@ -84,10 +84,16 @@ npm run build -w @sportsync/shared
 npm run build:packages
 ```
 
-If `tsc` reports success but `dist/` is still empty, delete stale cache and rebuild:
+Running `npm run build -w @sportsync/shared` only prints `> tsc` — that is normal. Check that output was created:
 
-```bash
-rm packages/shared/tsconfig.tsbuildinfo
+```powershell
+dir packages\shared\dist
+```
+
+You should see `index.js` and `index.d.ts`. If `dist` is empty, delete stale cache and rebuild:
+
+```powershell
+del packages\shared\tsconfig.tsbuildinfo
 npm run build -w @sportsync/shared
 ```
 
