@@ -10,6 +10,8 @@ export function VenueSettingsPage() {
   const [form, setForm] = useState<Partial<Venue['branding'] & { name: string }>>({});
   const [saved, setSaved] = useState(false);
   const [billing, setBilling] = useState<{ billingStatus: string; stripeConfigured: boolean } | null>(null);
+  const [smsStatus, setSmsStatus] = useState<{ configured: boolean; enabled: boolean; error?: string } | null>(null);
+  const [smsEnabled, setSmsEnabled] = useState(false);
   const [upgrading, setUpgrading] = useState(false);
   const billingNotice = searchParams.get('billing');
 
@@ -23,6 +25,8 @@ export function VenueSettingsPage() {
         sponsorBannerUrl: venue.branding.sponsorBannerUrl,
       });
       api.billing.status(venue.id).then(setBilling).catch(() => setBilling(null));
+      api.notifications.smsStatus(venue.id).then(setSmsStatus).catch(() => setSmsStatus(null));
+      setSmsEnabled(venue.smsEnabled ?? false);
     }
   }, [venue]);
 
@@ -55,6 +59,15 @@ export function VenueSettingsPage() {
     }
   };
 
+  const toggleSms = async () => {
+    if (!venue) return;
+    const next = !smsEnabled;
+    await api.venues.update(venue.id, { smsEnabled: next });
+    setSmsEnabled(next);
+    await refreshVenues();
+    api.notifications.smsStatus(venue.id).then(setSmsStatus);
+  };
+
   return (
     <div>
       <h1 style={{ fontSize: '1.75rem', marginBottom: '1.5rem' }}>Venue Settings</h1>
@@ -82,6 +95,8 @@ export function VenueSettingsPage() {
               <li>{venue.subscription.maxSports} sport(s)</li>
               <li>{venue.subscription.maxCompetitions} active competitions</li>
               <li>{venue.subscription.advancedReporting ? 'PDF & CSV export enabled' : 'Export requires Stadium tier'}</li>
+              <li>{venue.subscription.smsNotifications ? 'SMS notifications available' : 'SMS requires Stadium tier'}</li>
+              <li>{venue.subscription.maxScoreboards} scoreboard licence(s) included</li>
             </ul>
           )}
           {venue.productTier === 'club' && billing?.stripeConfigured && (
@@ -94,6 +109,23 @@ export function VenueSettingsPage() {
               Stripe billing is not configured on this server. Contact your administrator to upgrade.
             </p>
           )}
+        </div>
+      )}
+
+      {venue.subscription?.smsNotifications && (
+        <div className="card" style={{ marginBottom: '1.5rem', maxWidth: 480 }}>
+          <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>SMS notifications</div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginTop: '0.75rem' }}>
+            <button className={smsEnabled ? 'primary' : ''} onClick={toggleSms}>
+              {smsEnabled ? 'SMS enabled' : 'Enable SMS'}
+            </button>
+            {smsStatus && !smsStatus.configured && (
+              <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>Twilio not configured on server</span>
+            )}
+          </div>
+          <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginTop: '0.75rem' }}>
+            Send fixture reminder texts to players from the competition fixtures tab.
+          </p>
         </div>
       )}
 

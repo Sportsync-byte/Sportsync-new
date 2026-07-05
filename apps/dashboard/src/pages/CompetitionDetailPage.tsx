@@ -85,6 +85,18 @@ export function CompetitionDetailPage() {
     URL.revokeObjectURL(url);
   };
 
+  const sendSmsReminder = async (fixtureId: string) => {
+    const phones = prompt('Enter phone numbers (comma-separated, E.164 format e.g. +6421...):');
+    if (!phones?.trim()) return;
+    const to = phones.split(',').map((p) => p.trim()).filter(Boolean);
+    try {
+      const result = await api.notifications.fixtureReminder(fixtureId, to);
+      alert(`Sent ${result.sent} message(s)${result.failed.length ? `. Failed: ${result.failed.join(', ')}` : ''}`);
+    } catch (err) {
+      alert(err instanceof Error ? err.message : 'SMS failed');
+    }
+  };
+
   if (!competition) return <div>Loading...</div>;
 
   return (
@@ -154,7 +166,10 @@ export function CompetitionDetailPage() {
                   <button onClick={() => downloadFile(api.export.scorecardPdf(f.matchId!), 'scorecard.pdf')}>PDF</button>
                 )}
                 {f.status === 'scheduled' && (
-                  <button className="primary" onClick={() => startMatch(f.id)}>Start</button>
+                  <>
+                    <button onClick={() => sendSmsReminder(f.id)} title="Send SMS reminder">SMS</button>
+                    <button className="primary" onClick={() => startMatch(f.id)}>Start</button>
+                  </>
                 )}
                 {f.status === 'live' && (
                   <a href={`${SCORER_URL}?match=${f.matchId}`} target="_blank" rel="noreferrer">

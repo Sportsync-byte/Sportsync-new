@@ -88,6 +88,42 @@ export const api = {
     update: (id: string, data: Partial<Venue>) =>
       request<Venue>(`/venues/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
     courts: (venueId: string) => request<Court[]>(`/venues/${venueId}/courts`),
+    license: (venueId: string) =>
+      request<{ licenseKey: string; maxScoreboards: number; activeScoreboards: number; extraScoreboards: number; smsEnabled: boolean }>(
+        `/venues/${venueId}/license`
+      ),
+    addExtraScoreboards: (venueId: string, count = 1) =>
+      request<Venue>(`/venues/${venueId}/extra-scoreboards`, {
+        method: 'POST',
+        body: JSON.stringify({ count }),
+      }),
+  },
+  scoreboards: {
+    list: (venueId: string) =>
+      request<{ devices: import('@sportsync/shared').ScoreboardDevice[]; limit: number; active: number }>(
+        `/scoreboards/venue/${venueId}`
+      ),
+    update: (deviceId: string, data: { name?: string; courtId?: string; assignedMatchId?: string }) =>
+      request<import('@sportsync/shared').ScoreboardDevice>(`/scoreboards/${deviceId}`, {
+        method: 'PATCH',
+        body: JSON.stringify(data),
+      }),
+    revoke: (deviceId: string) =>
+      request<import('@sportsync/shared').ScoreboardDevice>(`/scoreboards/${deviceId}`, { method: 'DELETE' }),
+  },
+  notifications: {
+    smsStatus: (venueId: string) =>
+      request<{ configured: boolean; enabled: boolean; error?: string }>(`/notifications/sms/status/${venueId}`),
+    sendSms: (venueId: string, to: string[], message: string) =>
+      request<{ sent: number; failed: string[] }>('/notifications/sms/send', {
+        method: 'POST',
+        body: JSON.stringify({ venueId, to, message }),
+      }),
+    fixtureReminder: (fixtureId: string, to: string[]) =>
+      request<{ sent: number; failed: string[]; message: string }>(`/notifications/sms/fixture/${fixtureId}`, {
+        method: 'POST',
+        body: JSON.stringify({ to }),
+      }),
   },
   teams: {
     list: (venueId: string) => request<Team[]>(`/teams/venue/${venueId}`),

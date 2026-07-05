@@ -10,7 +10,9 @@ import { MatchStateModel } from './models/match-state.js';
 import { UserModel } from './models/user.js';
 import { PlayerStatsModel } from './models/player-stats.js';
 import { newId } from './utils/id.js';
+import { generateLicenseKey } from './utils/license.js';
 import { uniquePlayerSlug } from './utils/slug.js';
+import { ScoreboardDeviceModel } from './models/scoreboard-device.js';
 import { generateRoundRobinFixtures } from '@sportsync/shared';
 import bcrypt from 'bcryptjs';
 
@@ -28,10 +30,12 @@ async function seed() {
     PlayerModel.deleteMany({}),
     TeamModel.deleteMany({}),
     CourtModel.deleteMany({}),
+    ScoreboardDeviceModel.deleteMany({}),
     VenueModel.deleteMany({}),
   ]);
 
   const venueId = newId();
+  const licenseKey = generateLicenseKey();
   await VenueModel.create({
     id: venueId,
     name: 'Action Indoor Sports Christchurch',
@@ -40,6 +44,8 @@ async function seed() {
     branding: { primaryColor: '#00c896', secondaryColor: '#1a2332' },
     courtCount: 4,
     sports: ['indoor-cricket', 'indoor-netball', 'indoor-football'],
+    licenseKey,
+    smsEnabled: true,
   });
 
   const courts = await CourtModel.insertMany(
@@ -130,6 +136,7 @@ async function seed() {
   console.log('Seed complete!');
   console.log(`Venue ID: ${venueId}`);
   console.log(`Venue slug: action-christchurch`);
+  console.log(`Venue licence key: ${licenseKey}`);
   console.log(`Competition ID: ${competitionId}`);
 
   const netballTeams = teams.slice(0, 4);

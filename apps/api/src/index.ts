@@ -14,6 +14,9 @@ import { authRouter } from './routes/auth.js';
 import { statsRouter } from './routes/stats.js';
 import { exportRouter } from './routes/export.js';
 import { billingRouter } from './routes/billing.js';
+import { licensesRouter } from './routes/licenses.js';
+import { scoreboardsRouter } from './routes/scoreboards.js';
+import { notificationsRouter } from './routes/notifications.js';
 import { handleStripeWebhook } from './services/billing.js';
 import { setupSocketIO } from './socket/index.js';
 
@@ -22,6 +25,8 @@ const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/sports
 const CORS_ORIGIN = process.env.CORS_ORIGIN?.split(',') || [
   'http://localhost:5173',
   'http://localhost:5174',
+  'http://localhost:5175',
+  'http://localhost:5176',
 ];
 
 const app = express();
@@ -56,6 +61,9 @@ app.get('/health', (_req, res) => {
 
 app.use('/api/auth', authRouter);
 app.use('/api/billing', billingRouter);
+app.use('/api/licenses', licensesRouter);
+app.use('/api/scoreboards', scoreboardsRouter);
+app.use('/api/notifications', notificationsRouter);
 app.use('/api/stats', statsRouter);
 app.use('/api/export', exportRouter);
 app.use('/api/venues', venuesRouter);

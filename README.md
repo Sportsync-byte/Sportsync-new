@@ -14,8 +14,10 @@ All-in-one sports competition management and live scoring platform.
 | App | Port | Purpose |
 |-----|------|---------|
 | **API** | 3001 | Express + MongoDB + Socket.IO backend |
-| **Dashboard** | 5173 | Stadium administrator portal |
+| **Website** | 5175 | Public marketing site (sportsync.com) |
+| **Dashboard** | 5173 | Venue host portal — competitions, scoreboards, SMS |
 | **Scorer** | 5174 | Tablet-first live scoring app |
+| **Scoreboard** | 5176 | TV display app — licence key activation |
 
 ## Architecture
 
@@ -63,8 +65,10 @@ npm run seed          # Creates demo venue, 6 teams, competition, fixtures
 
 ```bash
 npm run dev:api         # Terminal 1
-npm run dev:dashboard   # Terminal 2 — http://localhost:5173
-npm run dev:scorer      # Terminal 3 — http://localhost:5174
+npm run dev:website     # Terminal 2 — http://localhost:5175
+npm run dev:dashboard   # Terminal 3 — http://localhost:5173
+npm run dev:scorer      # Terminal 4 — http://localhost:5174
+npm run dev:scoreboard  # Terminal 5 — http://localhost:5176 (TV display)
 ```
 
 ### Test the flow
@@ -103,6 +107,11 @@ npm run dev:scorer      # Terminal 3 — http://localhost:5174
 - **Court scheduling** with automatic court/time assignment on fixture generation
 - **Multi-court live view** dashboard with real-time Socket.IO updates
 - **Netball scorer** assist picker and undo last goal
+- **Venue licence keys** — one key per venue, activates scoreboard displays
+- **Scoreboard PC app** — install on TV hardware, pairs via licence key over internet
+- **SMS fixture reminders** — Stadium tier (Twilio)
+- **Marketing website** — landing page, pricing, venue login CTA
+- **Branded venue host login** — competition management portal
 - Real-time Socket.IO updates
 - Offline ball queue with sync on reconnect
 - Public live scores search (no login)
@@ -115,11 +124,30 @@ After running `npm run seed`:
 - **Email:** admin@sportsync.local
 - **Password:** admin123
 
+## Licence key & scoreboards
+
+Each venue gets a unique licence key (`SSYNC-XXXX-XXXX-XXXX`). Install the **Scoreboard app** on each TV/display PC:
+
+1. Open http://localhost:5176/activate
+2. Enter your venue licence key (shown in Dashboard → Scoreboards)
+3. Name the display (e.g. "Court 1 TV")
+4. Assign the scoreboard to a court in the dashboard — it auto-shows live matches
+
+| Tier | Scoreboards included | Extra scoreboards |
+|------|---------------------|-------------------|
+| Club | 1 | Purchase add-ons |
+| Stadium | 4 | +$29/mo each (via dashboard) |
+
+## SMS notifications (Stadium)
+
+Configure Twilio in `apps/api/.env`, enable SMS in Venue Settings, then send fixture reminders from the competition fixtures tab.
+
 ## Roadmap
 
 - [ ] Additional sports modules (football, basketball)
-- [ ] Email notifications for fixture reminders
-- [ ] Mobile app / PWA for scorers
+- [ ] Automated scheduled SMS before fixtures
+- [ ] Native scoreboard installer (Electron)
+- [ ] Stripe checkout for extra scoreboard licences
 
 ## License
 

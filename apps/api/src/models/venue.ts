@@ -24,6 +24,9 @@ const venueSchema = new Schema(
     stripeCustomerId: String,
     stripeSubscriptionId: String,
     billingStatus: { type: String, enum: ['none', 'active', 'past_due', 'canceled'], default: 'none' },
+    licenseKey: { type: String, unique: true, sparse: true, index: true },
+    extraScoreboards: { type: Number, default: 0 },
+    smsEnabled: { type: Boolean, default: false },
   },
   { timestamps: true }
 );
@@ -41,4 +44,7 @@ export interface VenueDocument {
   stripeCustomerId?: string;
   stripeSubscriptionId?: string;
   billingStatus?: 'none' | 'active' | 'past_due' | 'canceled';
+  licenseKey?: string;
+  extraScoreboards?: number;
+  smsEnabled?: boolean;
 }

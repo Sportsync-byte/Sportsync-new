@@ -24,8 +24,10 @@ export interface VenueSubscription {
   maxCourts: number;
   maxSports: number;
   maxCompetitions: number;
+  maxScoreboards: number;
   advancedReporting: boolean;
   multiAdmin: boolean;
+  smsNotifications: boolean;
 }
 
 export const TIER_LIMITS: Record<ProductTier, VenueSubscription> = {
@@ -34,16 +36,20 @@ export const TIER_LIMITS: Record<ProductTier, VenueSubscription> = {
     maxCourts: 2,
     maxSports: 1,
     maxCompetitions: 3,
+    maxScoreboards: 1,
     advancedReporting: false,
     multiAdmin: false,
+    smsNotifications: false,
   },
   stadium: {
     tier: 'stadium',
     maxCourts: 20,
     maxSports: 10,
     maxCompetitions: 50,
+    maxScoreboards: 4,
     advancedReporting: true,
     multiAdmin: true,
+    smsNotifications: true,
   },
 };
 
@@ -56,8 +62,37 @@ export interface Venue {
   branding: VenueBranding;
   courtCount: number;
   sports: SportId[];
+  licenseKey?: string;
+  maxScoreboards?: number;
+  extraScoreboards?: number;
+  smsEnabled?: boolean;
   createdAt: string;
   updatedAt: string;
+}
+
+export interface ScoreboardDevice {
+  id: string;
+  venueId: string;
+  name: string;
+  courtId?: string;
+  assignedMatchId?: string;
+  lastSeenAt?: string;
+  status: 'active' | 'revoked';
+  createdAt?: string;
+}
+
+export interface ScoreboardActivation {
+  deviceToken: string;
+  deviceId: string;
+  venueId: string;
+  venueName: string;
+}
+
+export interface ScoreboardSession {
+  device: ScoreboardDevice;
+  venue: Pick<Venue, 'id' | 'name' | 'branding'>;
+  matchId?: string;
+  sport?: SportId;
 }
 
 export interface VenueBranding {

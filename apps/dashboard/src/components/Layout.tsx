@@ -11,6 +11,7 @@ const navItems = [
   { to: '/players', label: 'Players' },
   { to: '/live', label: 'Live Scores' },
   { to: '/courts', label: 'Multi-Court' },
+  { to: '/scoreboards', label: 'Scoreboards' },
   { to: '/settings', label: 'Venue Settings' },
 ];
 

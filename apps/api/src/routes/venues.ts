@@ -4,6 +4,8 @@ import { CourtModel } from '../models/court.js';
 import { authMiddleware, requireRole } from '../middleware/auth.js';
 import { enrichVenue } from '../utils/venue.js';
 import { newId } from '../utils/id.js';
+import { generateLicenseKey } from '../utils/license.js';
+import { getVenueScoreboardLimit, countActiveScoreboards } from '../services/license.js';
 
 export const venuesRouter = Router();
 
@@ -41,6 +43,8 @@ venuesRouter.post('/', authMiddleware, requireRole('admin', 'owner'), async (req
     branding: branding || {},
     courtCount: courtCount || 1,
     sports: sports || ['indoor-cricket'],
+    licenseKey: generateLicenseKey(),
+    smsEnabled: productTier === 'stadium',
   });
 
   const courts = [];
@@ -54,7 +58,38 @@ venuesRouter.post('/', authMiddleware, requireRole('admin', 'owner'), async (req
   }
   await CourtModel.insertMany(courts);
 
-  res.status(201).json(venue);
+  res.status(201).json(enrichVenue(venue.toObject()));
+});
+
+venuesRouter.get('/:venueId/license', authMiddleware, requireRole('owner', 'admin'), async (req, res) => {
+  const venue = await VenueModel.findOne({ id: req.params.venueId });
+  if (!venue) {
+    res.status(404).json({ error: 'Venue not found' });
+    return;
+  }
+  const limit = await getVenueScoreboardLimit(venue.id);
+  const active = await countActiveScoreboards(venue.id);
+  res.json({
+    licenseKey: venue.licenseKey,
+    maxScoreboards: limit,
+    activeScoreboards: active,
+    extraScoreboards: venue.extraScoreboards ?? 0,
+    smsEnabled: venue.smsEnabled ?? false,
+  });
+});
+
+venuesRouter.post('/:venueId/extra-scoreboards', authMiddleware, requireRole('owner', 'admin'), async (req, res) => {
+  const { count = 1 } = req.body;
+  const venue = await VenueModel.findOneAndUpdate(
+    { id: req.params.venueId },
+    { $inc: { extraScoreboards: count } },
+    { new: true }
+  );
+  if (!venue) {
+    res.status(404).json({ error: 'Venue not found' });
+    return;
+  }
+  res.json(enrichVenue(venue.toObject()));
 });
 
 venuesRouter.get('/:venueId/courts', async (req, res) => {
