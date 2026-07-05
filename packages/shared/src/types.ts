@@ -137,6 +137,9 @@ export interface Player {
   slug: string;
   phone?: string;
   smsOptOut?: boolean;
+  /** Primary team for roster jersey number */
+  team?: string;
+  number?: number;
   teamIds: string[];
 }
 

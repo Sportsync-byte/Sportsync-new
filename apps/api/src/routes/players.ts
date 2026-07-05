@@ -118,6 +118,14 @@ playersRouter.post('/', ...manageRoles, async (req: AuthRequest, res) => {
     return Boolean(existing);
   });
 
+  const rosterTeamIds: string[] = teamIds || [];
+  const primaryTeamId = rosterTeamIds[0];
+  let number: number | undefined;
+  if (primaryTeamId) {
+    const last = await PlayerModel.findOne({ team: primaryTeamId }).sort({ number: -1 });
+    number = (last?.number ?? 0) + 1;
+  }
+
   const player = await PlayerModel.create({
     id: newId(),
     venueId,
@@ -125,7 +133,8 @@ playersRouter.post('/', ...manageRoles, async (req: AuthRequest, res) => {
     lastName,
     displayName: name,
     slug,
-    teamIds: teamIds || [],
+    teamIds: rosterTeamIds,
+    ...(primaryTeamId ? { team: primaryTeamId, number } : {}),
     ...(phone ? { phone: normalizePhone(phone) } : {}),
   });
   res.status(201).json(player);

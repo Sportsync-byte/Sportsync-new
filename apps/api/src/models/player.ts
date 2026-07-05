@@ -10,12 +10,16 @@ const playerSchema = new Schema(
     slug: { type: String, required: true, index: true },
     phone: String,
     smsOptOut: { type: Boolean, default: false },
+    /** Primary team for roster jersey number (legacy DB index: team + number). */
+    team: { type: String },
+    number: { type: Number },
     teamIds: [{ type: String }],
   },
   { timestamps: true }
 );
 
 playerSchema.index({ venueId: 1, slug: 1 }, { unique: true });
+playerSchema.index({ team: 1, number: 1 }, { unique: true, sparse: true });
 
 export const PlayerModel = model('Player', playerSchema);
 
@@ -28,5 +32,7 @@ export interface PlayerDocument {
   slug: string;
   phone?: string;
   smsOptOut?: boolean;
+  team?: string;
+  number?: number;
   teamIds: string[];
 }

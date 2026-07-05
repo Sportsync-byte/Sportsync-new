@@ -19,8 +19,23 @@ import bcrypt from 'bcryptjs';
 
 const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/sportsync';
 
+async function dropLegacyIndexes() {
+  for (const [model, indexName] of [
+    [CourtModel, 'venueId_1_number_1'],
+    [PlayerModel, 'team_1_number_1'],
+  ] as const) {
+    try {
+      await model.collection.dropIndex(indexName);
+    } catch {
+      // Index may not exist on fresh databases.
+    }
+  }
+  await Promise.all([CourtModel.syncIndexes(), PlayerModel.syncIndexes()]);
+}
+
 async function seed() {
   await connectDatabase(MONGODB_URI);
+  await dropLegacyIndexes();
 
   await Promise.all([
     PlayerStatsModel.deleteMany({}),
@@ -94,6 +109,8 @@ async function seed() {
         lastName: `${i}`,
         displayName,
         slug,
+        team: team.id,
+        number: i,
         teamIds: [team.id],
         ...(i <= 3 ? { phone: `+6421${String(100000 + phoneIndex).slice(-7)}` } : {}),
       });
