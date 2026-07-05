@@ -10,6 +10,7 @@ import { MatchStateModel } from './models/match-state.js';
 import { UserModel } from './models/user.js';
 import { PlayerStatsModel } from './models/player-stats.js';
 import { newId } from './utils/id.js';
+import { uniquePlayerSlug } from './utils/slug.js';
 import { generateRoundRobinFixtures } from '@sportsync/shared';
 import bcrypt from 'bcryptjs';
 
@@ -68,12 +69,18 @@ async function seed() {
   const players = [];
   for (const team of teams) {
     for (let i = 1; i <= 8; i++) {
+      const displayName = `${team.name} Player ${i}`;
+      const slug = await uniquePlayerSlug(venueId, displayName, async (vId, s) => {
+        const existing = await PlayerModel.findOne({ venueId: vId, slug: s });
+        return Boolean(existing);
+      });
       players.push({
         id: newId(),
         venueId,
         firstName: `Player`,
         lastName: `${i}`,
-        displayName: `${team.name} Player ${i}`,
+        displayName,
+        slug,
         teamIds: [team.id],
       });
     }

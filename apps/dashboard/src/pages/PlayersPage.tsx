@@ -76,7 +76,7 @@ export function PlayersPage() {
             {players.map((p) => (
               <tr key={p.id} style={{ borderBottom: '1px solid var(--border)' }}>
                 <td style={tdStyle}>
-                  <Link to={`/players/${p.id}`} style={{ fontWeight: 600 }}>{p.displayName}</Link>
+                  <Link to={p.slug ? `/p/${p.slug}` : `/players/${p.id}`} style={{ fontWeight: 600 }}>{p.displayName}</Link>
                 </td>
                 <td style={tdStyle}>{p.teamIds.map((id) => teamMap[id]).filter(Boolean).join(', ') || '—'}</td>
               </tr>

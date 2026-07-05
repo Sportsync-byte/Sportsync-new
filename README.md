@@ -94,6 +94,10 @@ npm run dev:scorer      # Terminal 3 — http://localhost:5174
 - **Netball scorer UI** end-to-end with quarter timer and TV display
 - **Public player profiles** with search (no login required to view)
 - **CSV export** for ladder, statistics, and scorecards
+- **PDF export** for ladder and match scorecards
+- **Netball player goal statistics** aggregated per match and season
+- **Stripe subscription billing** with checkout and webhooks for Stadium tier upgrades
+- **Public player profile URLs** via unique slugs (`/p/:slug`)
 - **Subscription tiers** — Club vs Stadium limits enforced on competitions
 - Real-time Socket.IO updates
 - Offline ball queue with sync on reconnect
@@ -109,10 +113,10 @@ After running `npm run seed`:
 
 ## Roadmap
 
-- [ ] Netball scorer UI and fixture flow
-- [ ] Public player profiles
-- [ ] PDF/CSV export
-- [ ] Subscription tiers (Club / Stadium)
+- [ ] Additional sports modules (football, basketball)
+- [ ] Court scheduling and multi-court live view
+- [ ] Mobile app for scorers
+- [ ] Email notifications for fixture reminders
 
 ## License
 

@@ -4,8 +4,36 @@ import { TeamModel } from '../models/team.js';
 import { PlayerStatsModel } from '../models/player-stats.js';
 import { CompetitionModel } from '../models/competition.js';
 import { newId } from '../utils/id.js';
+import { uniquePlayerSlug } from '../utils/slug.js';
 
 export const playersRouter = Router();
+
+async function buildPlayerProfile(player: InstanceType<typeof PlayerModel>) {
+  const [teams, stats] = await Promise.all([
+    TeamModel.find({ id: { $in: player.teamIds } }),
+    PlayerStatsModel.find({ playerId: player.id }),
+  ]);
+
+  const competitionIds = [...new Set(stats.map((s) => s.competitionId).filter(Boolean))];
+  const competitions = await CompetitionModel.find({ id: { $in: competitionIds } });
+  const compMap = Object.fromEntries(competitions.map((c) => [c.id, c]));
+
+  return {
+    ...player.toObject(),
+    teams,
+    stats: stats.map((s) => ({
+      competitionId: s.competitionId,
+      competitionName: compMap[s.competitionId || '']?.name,
+      season: compMap[s.competitionId || '']?.season,
+      matchesPlayed: s.matchesPlayed,
+      runs: s.runs,
+      wickets: s.wickets,
+      catches: s.catches,
+      goals: s.goals,
+      assists: s.assists,
+    })),
+  };
+}
 
 playersRouter.get('/public/search', async (req, res) => {
   const { venueId, q } = req.query;
@@ -19,9 +47,23 @@ playersRouter.get('/public/search', async (req, res) => {
     (p) =>
       p.displayName.toLowerCase().includes(search) ||
       p.firstName.toLowerCase().includes(search) ||
-      p.lastName.toLowerCase().includes(search)
+      p.lastName.toLowerCase().includes(search) ||
+      p.slug.toLowerCase().includes(search)
   );
   res.json(filtered.slice(0, 20));
+});
+
+playersRouter.get('/public/slug/:slug', async (req, res) => {
+  const { venueId } = req.query;
+  const filter: Record<string, string> = { slug: req.params.slug };
+  if (venueId) filter.venueId = String(venueId);
+
+  const player = await PlayerModel.findOne(filter);
+  if (!player) {
+    res.status(404).json({ error: 'Player not found' });
+    return;
+  }
+  res.json(await buildPlayerProfile(player));
 });
 
 playersRouter.get('/public/:playerId', async (req, res) => {
@@ -30,29 +72,7 @@ playersRouter.get('/public/:playerId', async (req, res) => {
     res.status(404).json({ error: 'Player not found' });
     return;
   }
-
-  const [teams, stats] = await Promise.all([
-    TeamModel.find({ id: { $in: player.teamIds } }),
-    PlayerStatsModel.find({ playerId: player.id }),
-  ]);
-
-  const competitionIds = [...new Set(stats.map((s) => s.competitionId).filter(Boolean))];
-  const competitions = await CompetitionModel.find({ id: { $in: competitionIds } });
-  const compMap = Object.fromEntries(competitions.map((c) => [c.id, c]));
-
-  res.json({
-    ...player.toObject(),
-    teams,
-    stats: stats.map((s) => ({
-      competitionId: s.competitionId,
-      competitionName: compMap[s.competitionId || '']?.name,
-      season: compMap[s.competitionId || '']?.season,
-      matchesPlayed: s.matchesPlayed,
-      runs: s.runs,
-      wickets: s.wickets,
-      catches: s.catches,
-    })),
-  });
+  res.json(await buildPlayerProfile(player));
 });
 
 playersRouter.get('/venue/:venueId', async (req, res) => {
@@ -78,12 +98,19 @@ playersRouter.post('/', async (req, res) => {
     return;
   }
 
+  const name = displayName || `${firstName} ${lastName}`;
+  const slug = await uniquePlayerSlug(venueId, name, async (vId, s) => {
+    const existing = await PlayerModel.findOne({ venueId: vId, slug: s });
+    return Boolean(existing);
+  });
+
   const player = await PlayerModel.create({
     id: newId(),
     venueId,
     firstName,
     lastName,
-    displayName: displayName || `${firstName} ${lastName}`,
+    displayName: name,
+    slug,
     teamIds: teamIds || [],
   });
   res.status(201).json(player);

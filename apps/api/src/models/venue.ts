@@ -21,6 +21,9 @@ const venueSchema = new Schema(
     branding: { type: brandingSchema, default: () => ({}) },
     courtCount: { type: Number, default: 1 },
     sports: [{ type: String }],
+    stripeCustomerId: String,
+    stripeSubscriptionId: String,
+    billingStatus: { type: String, enum: ['none', 'active', 'past_due', 'canceled'], default: 'none' },
   },
   { timestamps: true }
 );
@@ -35,4 +38,7 @@ export interface VenueDocument {
   branding: VenueBranding;
   courtCount: number;
   sports: SportId[];
+  stripeCustomerId?: string;
+  stripeSubscriptionId?: string;
+  billingStatus?: 'none' | 'active' | 'past_due' | 'canceled';
 }

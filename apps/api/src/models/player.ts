@@ -7,10 +7,13 @@ const playerSchema = new Schema(
     firstName: { type: String, required: true },
     lastName: { type: String, required: true },
     displayName: { type: String, required: true },
+    slug: { type: String, required: true, index: true },
     teamIds: [{ type: String }],
   },
   { timestamps: true }
 );
+
+playerSchema.index({ venueId: 1, slug: 1 }, { unique: true });
 
 export const PlayerModel = model('Player', playerSchema);
 
@@ -20,5 +23,6 @@ export interface PlayerDocument {
   firstName: string;
   lastName: string;
   displayName: string;
+  slug: string;
   teamIds: string[];
 }

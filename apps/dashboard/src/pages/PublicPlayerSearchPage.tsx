@@ -35,7 +35,7 @@ export function PublicPlayerSearchPage() {
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
         {results.map((p) => (
-          <Link key={p.id} to={`/players/${p.id}`} style={{ color: 'inherit' }}>
+          <Link key={p.id} to={p.slug ? `/p/${p.slug}` : `/players/${p.id}`} style={{ color: 'inherit' }}>
             <div className="card" style={{ fontWeight: 600 }}>{p.displayName}</div>
           </Link>
         ))}

@@ -1,5 +1,5 @@
-import type { IndoorCricketMatchState } from '@sportsync/shared';
-import { aggregateMatchStats, mergeSeasonStats } from '@sportsync/sport-rules';
+import type { IndoorCricketMatchState, NetballMatchState } from '@sportsync/shared';
+import { aggregateMatchStats, mergeSeasonStats, aggregateNetballStats, mergeNetballSeasonStats } from '@sportsync/sport-rules';
 import { PlayerStatsModel } from '../models/player-stats.js';
 import { newId } from '../utils/id.js';
 
@@ -33,6 +33,40 @@ export async function persistMatchStats(
             catches: existing.catches,
             runOuts: existing.runOuts,
             stumpings: existing.stumpings,
+          }
+        : null,
+      matchStats,
+      playerId
+    );
+
+    await PlayerStatsModel.findOneAndUpdate(
+      { playerId, competitionId },
+      {
+        $set: { ...merged, venueId, competitionId },
+        $setOnInsert: { id: newId() },
+      },
+      { upsert: true }
+    );
+  }
+}
+
+export async function persistNetballStats(
+  state: NetballMatchState,
+  venueId: string,
+  competitionId: string
+): Promise<void> {
+  const matchStats = aggregateNetballStats(state);
+  const playerIds = new Set(matchStats.map((m) => m.playerId));
+
+  for (const playerId of playerIds) {
+    const existing = await PlayerStatsModel.findOne({ playerId, competitionId });
+    const merged = mergeNetballSeasonStats(
+      existing
+        ? {
+            playerId,
+            matchesPlayed: existing.matchesPlayed,
+            goals: existing.goals,
+            assists: existing.assists,
           }
         : null,
       matchStats,

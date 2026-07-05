@@ -13,6 +13,8 @@ import { liveRouter } from './routes/live.js';
 import { authRouter } from './routes/auth.js';
 import { statsRouter } from './routes/stats.js';
 import { exportRouter } from './routes/export.js';
+import { billingRouter } from './routes/billing.js';
+import { handleStripeWebhook } from './services/billing.js';
 import { setupSocketIO } from './socket/index.js';
 
 const PORT = Number(process.env.PORT) || 3001;
@@ -26,6 +28,26 @@ const app = express();
 const httpServer = createServer(app);
 
 app.use(cors({ origin: CORS_ORIGIN }));
+
+app.post(
+  '/api/billing/webhook',
+  express.raw({ type: 'application/json' }),
+  async (req, res) => {
+    const signature = req.headers['stripe-signature'];
+    if (!signature || typeof signature !== 'string') {
+      res.status(400).json({ error: 'Missing stripe-signature header' });
+      return;
+    }
+    try {
+      await handleStripeWebhook(req.body as Buffer, signature);
+      res.json({ received: true });
+    } catch (error) {
+      console.error('Stripe webhook error:', error);
+      res.status(400).json({ error: error instanceof Error ? error.message : 'Webhook failed' });
+    }
+  }
+);
+
 app.use(express.json());
 
 app.get('/health', (_req, res) => {
@@ -33,6 +55,7 @@ app.get('/health', (_req, res) => {
 });
 
 app.use('/api/auth', authRouter);
+app.use('/api/billing', billingRouter);
 app.use('/api/stats', statsRouter);
 app.use('/api/export', exportRouter);
 app.use('/api/venues', venuesRouter);

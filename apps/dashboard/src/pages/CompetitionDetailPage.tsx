@@ -15,6 +15,7 @@ export function CompetitionDetailPage() {
 
   const teamMap = Object.fromEntries(teams.map((t) => [t.id, t.name]));
   const playerMap = Object.fromEntries(players.map((p) => [p.id, p.displayName]));
+  const isNetball = competition?.sport === 'indoor-netball';
 
   const load = async () => {
     if (!competitionId) return;
@@ -50,7 +51,7 @@ export function CompetitionDetailPage() {
     window.open('http://localhost:5174', '_blank');
   };
 
-  const downloadCsv = async (path: string, filename: string) => {
+  const downloadFile = async (path: string, filename: string) => {
     const token = localStorage.getItem('sportsync-token');
     const res = await fetch(path, { headers: token ? { Authorization: `Bearer ${token}` } : {} });
     const blob = await res.blob();
@@ -72,13 +73,14 @@ export function CompetitionDetailPage() {
         {competition.settings.formatKey} · {competition.teamIds.length} teams
       </p>
 
-      <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1.5rem' }}>
+      <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1.5rem', flexWrap: 'wrap' }}>
         <button className={tab === 'fixtures' ? 'primary' : ''} onClick={() => setTab('fixtures')}>Fixtures</button>
         <button className={tab === 'ladder' ? 'primary' : ''} onClick={() => setTab('ladder')}>Ladder</button>
         <button className={tab === 'stats' ? 'primary' : ''} onClick={() => setTab('stats')}>Statistics</button>
-        <div style={{ marginLeft: 'auto', display: 'flex', gap: '0.5rem' }}>
-          <button onClick={() => downloadCsv(api.export.ladderCsv(competition.id), 'ladder.csv')}>Export Ladder CSV</button>
-          <button onClick={() => downloadCsv(api.export.statsCsv(competition.id), 'stats.csv')}>Export Stats CSV</button>
+        <div style={{ marginLeft: 'auto', display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+          <button onClick={() => downloadFile(api.export.ladderCsv(competition.id), 'ladder.csv')}>Ladder CSV</button>
+          <button onClick={() => downloadFile(api.export.ladderPdf(competition.id), 'ladder.pdf')}>Ladder PDF</button>
+          <button onClick={() => downloadFile(api.export.statsCsv(competition.id), 'stats.csv')}>Stats CSV</button>
           {fixtures.length === 0 && (
             <button className="primary" onClick={generateFixtures}>Generate Fixtures</button>
           )}
@@ -96,12 +98,17 @@ export function CompetitionDetailPage() {
                 </div>
                 {f.status === 'completed' && (
                   <div style={{ fontSize: '0.85rem', marginTop: '0.25rem' }}>
-                    {f.homeScore}/{f.homeWickets} – {f.awayScore}/{f.awayWickets}
+                    {isNetball
+                      ? `${f.homeScore} – ${f.awayScore}`
+                      : `${f.homeScore}/${f.homeWickets} – ${f.awayScore}/${f.awayWickets}`}
                   </div>
                 )}
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                 <span className={`badge ${f.status === 'live' ? 'live' : 'draft'}`}>{f.status}</span>
+                {f.status === 'completed' && f.matchId && (
+                  <button onClick={() => downloadFile(api.export.scorecardPdf(f.matchId!), 'scorecard.pdf')}>PDF</button>
+                )}
                 {f.status === 'scheduled' && (
                   <button className="primary" onClick={() => startMatch(f.id)}>Start</button>
                 )}
@@ -152,23 +159,44 @@ export function CompetitionDetailPage() {
               <tr style={{ borderBottom: '1px solid var(--border)' }}>
                 <th style={thStyle}>Player</th>
                 <th style={thStyle}>M</th>
-                <th style={thStyle}>Runs</th>
-                <th style={thStyle}>4s</th>
-                <th style={thStyle}>6s</th>
-                <th style={thStyle}>Wkts</th>
-                <th style={thStyle}>Ct</th>
+                {isNetball ? (
+                  <>
+                    <th style={thStyle}>Goals</th>
+                    <th style={thStyle}>Assists</th>
+                  </>
+                ) : (
+                  <>
+                    <th style={thStyle}>Runs</th>
+                    <th style={thStyle}>4s</th>
+                    <th style={thStyle}>6s</th>
+                    <th style={thStyle}>Wkts</th>
+                    <th style={thStyle}>Ct</th>
+                  </>
+                )}
               </tr>
             </thead>
             <tbody>
-              {[...stats].sort((a, b) => b.runs - a.runs).map((s) => (
+              {(isNetball
+                ? [...stats].sort((a, b) => b.goals - a.goals)
+                : [...stats].sort((a, b) => b.runs - a.runs)
+              ).map((s) => (
                 <tr key={s.playerId} style={{ borderBottom: '1px solid var(--border)' }}>
                   <td style={tdStyle}>{playerMap[s.playerId] || s.playerId}</td>
                   <td style={tdStyle}>{s.matchesPlayed}</td>
-                  <td style={tdStyle}>{s.runs}</td>
-                  <td style={tdStyle}>{s.fours}</td>
-                  <td style={tdStyle}>{s.sixes}</td>
-                  <td style={tdStyle}>{s.wickets}</td>
-                  <td style={tdStyle}>{s.catches}</td>
+                  {isNetball ? (
+                    <>
+                      <td style={tdStyle}>{s.goals}</td>
+                      <td style={tdStyle}>{s.assists}</td>
+                    </>
+                  ) : (
+                    <>
+                      <td style={tdStyle}>{s.runs}</td>
+                      <td style={tdStyle}>{s.fours}</td>
+                      <td style={tdStyle}>{s.sixes}</td>
+                      <td style={tdStyle}>{s.wickets}</td>
+                      <td style={tdStyle}>{s.catches}</td>
+                    </>
+                  )}
                 </tr>
               ))}
             </tbody>

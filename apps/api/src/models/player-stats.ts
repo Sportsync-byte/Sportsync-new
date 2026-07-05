@@ -18,6 +18,8 @@ const playerStatsSchema = new Schema(
     catches: { type: Number, default: 0 },
     runOuts: { type: Number, default: 0 },
     stumpings: { type: Number, default: 0 },
+    goals: { type: Number, default: 0 },
+    assists: { type: Number, default: 0 },
   },
   { timestamps: true }
 );
@@ -43,4 +45,6 @@ export interface PlayerStatsDocument {
   catches: number;
   runOuts: number;
   stumpings: number;
+  goals: number;
+  assists: number;
 }

@@ -13,10 +13,15 @@ statsRouter.get('/player/:playerId', async (req, res) => {
 });
 
 statsRouter.get('/competition/:competitionId', async (req, res) => {
-  const stats = await PlayerStatsModel.find({ competitionId: req.params.competitionId }).sort({
-    runs: -1,
-  });
-  res.json(stats);
+  const { CompetitionModel } = await import('../models/competition.js');
+  const competition = await CompetitionModel.findOne({ id: req.params.competitionId });
+  const stats = await PlayerStatsModel.find({ competitionId: req.params.competitionId });
+
+  if (competition?.sport === 'indoor-netball') {
+    res.json([...stats].sort((a, b) => b.goals - a.goals));
+    return;
+  }
+  res.json([...stats].sort((a, b) => b.runs - a.runs));
 });
 
 statsRouter.get('/competition/:competitionId/leaders', async (req, res) => {

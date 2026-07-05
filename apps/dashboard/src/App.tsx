@@ -37,6 +37,7 @@ function ProtectedRoutes() {
         <Route path="/players" element={<PlayersPage />} />
         <Route path="/players/search" element={<PublicPlayerSearchPage />} />
         <Route path="/players/:playerId" element={<PlayerProfilePage />} />
+        <Route path="/p/:slug" element={<PlayerProfilePage />} />
         <Route path="/live" element={<LiveScoresPage />} />
         <Route path="/settings" element={<VenueSettingsPage />} />
         <Route path="*" element={<Navigate to="/" replace />} />
@@ -57,6 +58,7 @@ export default function App() {
       <Routes>
         <Route path="/players/search" element={<PublicLayout><PublicPlayerSearchPage /></PublicLayout>} />
         <Route path="/players/:playerId" element={<PublicLayout><PlayerProfilePage /></PublicLayout>} />
+        <Route path="/p/:slug" element={<PublicLayout><PlayerProfilePage /></PublicLayout>} />
         <Route path="*" element={<LoginPage />} />
       </Routes>
     );

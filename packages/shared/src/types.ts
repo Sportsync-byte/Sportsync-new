@@ -96,6 +96,7 @@ export interface Player {
   firstName: string;
   lastName: string;
   displayName: string;
+  slug: string;
   teamIds: string[];
 }
 
@@ -107,6 +108,8 @@ export interface PlayerSeasonStatsSummary {
   runs: number;
   wickets: number;
   catches: number;
+  goals?: number;
+  assists?: number;
 }
 
 export interface PlayerProfile extends Player {

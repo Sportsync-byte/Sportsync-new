@@ -38,6 +38,8 @@ export interface PlayerStats {
   catches: number;
   runOuts: number;
   stumpings: number;
+  goals: number;
+  assists: number;
 }
 
 function getToken(): string | null {
@@ -102,6 +104,10 @@ export const api = {
       request<Player>('/players', { method: 'POST', body: JSON.stringify(data) }),
     delete: (id: string) => request<void>(`/players/${id}`, { method: 'DELETE' }),
     publicProfile: (playerId: string) => request<import('@sportsync/shared').PlayerProfile>(`/players/public/${playerId}`),
+    publicProfileBySlug: (slug: string, venueId?: string) =>
+      request<import('@sportsync/shared').PlayerProfile>(
+        `/players/public/slug/${slug}${venueId ? `?venueId=${venueId}` : ''}`
+      ),
     search: (venueId: string, q: string) =>
       request<import('@sportsync/shared').Player[]>(`/players/public/search?venueId=${venueId}&q=${encodeURIComponent(q)}`),
     stats: (playerId: string, competitionId?: string) =>
@@ -154,7 +160,20 @@ export const api = {
   },
   export: {
     ladderCsv: (competitionId: string) => `/api/export/competition/${competitionId}/ladder.csv`,
+    ladderPdf: (competitionId: string) => `/api/export/competition/${competitionId}/ladder.pdf`,
     statsCsv: (competitionId: string) => `/api/export/competition/${competitionId}/stats.csv`,
     scorecardCsv: (matchId: string) => `/api/export/match/${matchId}/scorecard.csv`,
+    scorecardPdf: (matchId: string) => `/api/export/match/${matchId}/scorecard.pdf`,
+  },
+  billing: {
+    status: (venueId: string) =>
+      request<{ productTier: string; billingStatus: string; stripeConfigured: boolean }>(
+        `/billing/status/${venueId}`
+      ),
+    checkout: (venueId: string) =>
+      request<{ url: string }>('/billing/checkout', {
+        method: 'POST',
+        body: JSON.stringify({ venueId }),
+      }),
   },
 };

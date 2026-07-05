@@ -2,11 +2,16 @@ import { useEffect, useState } from 'react';
 import { api } from '@sportsync/api-client';
 import type { Venue } from '@sportsync/shared';
 import { useVenue } from '../context/VenueContext';
+import { useSearchParams } from 'react-router-dom';
 
 export function VenueSettingsPage() {
   const { venue, refreshVenues } = useVenue();
+  const [searchParams] = useSearchParams();
   const [form, setForm] = useState<Partial<Venue['branding'] & { name: string }>>({});
   const [saved, setSaved] = useState(false);
+  const [billing, setBilling] = useState<{ billingStatus: string; stripeConfigured: boolean } | null>(null);
+  const [upgrading, setUpgrading] = useState(false);
+  const billingNotice = searchParams.get('billing');
 
   useEffect(() => {
     if (venue) {
@@ -17,6 +22,7 @@ export function VenueSettingsPage() {
         logoUrl: venue.branding.logoUrl,
         sponsorBannerUrl: venue.branding.sponsorBannerUrl,
       });
+      api.billing.status(venue.id).then(setBilling).catch(() => setBilling(null));
     }
   }, [venue]);
 
@@ -37,23 +43,56 @@ export function VenueSettingsPage() {
     setTimeout(() => setSaved(false), 2000);
   };
 
+  const upgrade = async () => {
+    setUpgrading(true);
+    try {
+      const { url } = await api.billing.checkout(venue.id);
+      if (url) window.location.href = url;
+    } catch (error) {
+      alert(error instanceof Error ? error.message : 'Upgrade failed');
+    } finally {
+      setUpgrading(false);
+    }
+  };
+
   return (
     <div>
       <h1 style={{ fontSize: '1.75rem', marginBottom: '1.5rem' }}>Venue Settings</h1>
+
+      {billingNotice === 'success' && (
+        <div className="card" style={{ marginBottom: '1rem', borderColor: 'var(--accent)' }}>
+          Subscription activated — welcome to Stadium tier!
+        </div>
+      )}
 
       {venue && (
         <div className="card" style={{ marginBottom: '1.5rem', maxWidth: 480 }}>
           <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>Subscription</div>
           <div style={{ fontWeight: 700, fontSize: '1.1rem', textTransform: 'capitalize', marginTop: '0.25rem' }}>
             {venue.productTier} tier
+            {billing?.billingStatus && billing.billingStatus !== 'none' && (
+              <span style={{ fontWeight: 400, fontSize: '0.85rem', marginLeft: '0.5rem', color: 'var(--text-muted)' }}>
+                ({billing.billingStatus})
+              </span>
+            )}
           </div>
           {venue.subscription && (
             <ul style={{ marginTop: '0.75rem', paddingLeft: '1.25rem', color: 'var(--text-muted)', fontSize: '0.9rem' }}>
               <li>Up to {venue.subscription.maxCourts} courts</li>
               <li>{venue.subscription.maxSports} sport(s)</li>
               <li>{venue.subscription.maxCompetitions} active competitions</li>
-              <li>{venue.subscription.advancedReporting ? 'CSV export enabled' : 'CSV export requires Stadium tier'}</li>
+              <li>{venue.subscription.advancedReporting ? 'PDF & CSV export enabled' : 'Export requires Stadium tier'}</li>
             </ul>
+          )}
+          {venue.productTier === 'club' && billing?.stripeConfigured && (
+            <button className="primary" style={{ marginTop: '1rem' }} onClick={upgrade} disabled={upgrading}>
+              {upgrading ? 'Redirecting…' : 'Upgrade to Stadium'}
+            </button>
+          )}
+          {venue.productTier === 'club' && billing && !billing.stripeConfigured && (
+            <p style={{ marginTop: '1rem', fontSize: '0.85rem', color: 'var(--text-muted)' }}>
+              Stripe billing is not configured on this server. Contact your administrator to upgrade.
+            </p>
           )}
         </div>
       )}

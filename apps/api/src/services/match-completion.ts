@@ -4,7 +4,7 @@ import { FixtureModel } from '../models/fixture.js';
 import { CompetitionModel } from '../models/competition.js';
 import { MatchStateModel } from '../models/match-state.js';
 import { buildLadderFromFixtures } from './ladder.js';
-import { persistMatchStats } from './stats.js';
+import { persistMatchStats, persistNetballStats } from './stats.js';
 
 export async function completeFixtureFromMatchState(
   matchId: string,
@@ -48,6 +48,7 @@ export async function completeFixtureFromMatchState(
       const fixtures = await FixtureModel.find({ competitionId: competition.id });
       const ladder = buildLadderFromFixtures(competition, fixtures);
       await CompetitionModel.updateOne({ id: competition.id }, { ladder });
+      await persistNetballStats(netballState, fixture.venueId, fixture.competitionId);
     }
     return fixture;
   }
