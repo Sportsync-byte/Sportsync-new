@@ -40,6 +40,24 @@ export function ScoreboardsPage() {
     load();
   };
 
+  const purchaseScoreboard = async () => {
+    if (!venue) return;
+    try {
+      const { url } = await api.billing.checkoutScoreboards(venue.id, 1);
+      if (url) window.location.href = url;
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Checkout failed';
+      if (message.includes('not configured') || message.includes('devFallback')) {
+        if (confirm('Stripe not configured. Add slot manually for development?')) {
+          await api.venues.addExtraScoreboards(venue.id, 1);
+          load();
+        }
+      } else {
+        alert(message);
+      }
+    }
+  };
+
   if (!venue) return null;
 
   return (
@@ -62,8 +80,8 @@ export function ScoreboardsPage() {
           {venue.subscription && !venue.subscription.smsNotifications && ' Upgrade to Stadium for SMS.'}
         </p>
         {active >= limit && (
-          <button className="primary" style={{ marginTop: '0.75rem' }} onClick={() => api.venues.addExtraScoreboards(venue.id, 1).then(load)}>
-            Add scoreboard slot (+1)
+          <button className="primary" style={{ marginTop: '0.75rem' }} onClick={purchaseScoreboard}>
+            Purchase scoreboard licence (+1)
           </button>
         )}
       </div>

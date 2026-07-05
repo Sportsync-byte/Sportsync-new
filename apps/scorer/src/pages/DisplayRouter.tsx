@@ -2,9 +2,9 @@ import { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { io } from 'socket.io-client';
 import { SOCKET_EVENTS } from '@sportsync/shared';
-import type { NetballMatchState } from '@sportsync/shared';
+import type { NetballMatchState, IndoorFootballMatchState } from '@sportsync/shared';
 import { api } from '@sportsync/api-client';
-import { getNetballScoreboard } from '@sportsync/sport-rules';
+import { getNetballScoreboard, getFootballScoreboard } from '@sportsync/sport-rules';
 import { playSiren, formatTimer } from '../lib/siren';
 import { ScoreboardDisplayPage } from './ScoreboardDisplayPage';
 
@@ -22,6 +22,7 @@ export function DisplayRouter() {
 
   if (!sport) return <div style={{ minHeight: '100vh', display: 'grid', placeItems: 'center', background: '#0a0e12', color: '#fff' }}>Loading...</div>;
   if (sport === 'indoor-netball') return <NetballDisplayPage />;
+  if (sport === 'indoor-football') return <FootballDisplayPage />;
   return <ScoreboardDisplayPage />;
 }
 
@@ -66,6 +67,49 @@ function NetballDisplayPage() {
       <div style={{ textAlign: 'center', fontSize: '2rem', marginBottom: '2rem', color: display.timerExpired ? '#ff4757' : '#00d4aa' }}>
         {formatTimer(display.timerSeconds)}
       </div>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr auto 1fr', alignItems: 'center', gap: '2rem' }}>
+        <div style={{ textAlign: 'center' }}>
+          <div>{teamNames[display.homeTeamId] || 'Home'}</div>
+          <div style={{ fontSize: '6rem', fontWeight: 900 }}>{display.homeScore}</div>
+        </div>
+        <div>vs</div>
+        <div style={{ textAlign: 'center' }}>
+          <div>{teamNames[display.awayTeamId] || 'Away'}</div>
+          <div style={{ fontSize: '6rem', fontWeight: 900 }}>{display.awayScore}</div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function FootballDisplayPage() {
+  const { matchId } = useParams<{ matchId: string }>();
+  const [state, setState] = useState<IndoorFootballMatchState | null>(null);
+  const [teamNames, setTeamNames] = useState<Record<string, string>>({});
+
+  useEffect(() => {
+    if (!matchId) return;
+    let socket: ReturnType<typeof io> | null = null;
+    api.matches.get(matchId).then(async (doc) => {
+      const match = doc as { state: IndoorFootballMatchState; venueId?: string };
+      setState(match.state);
+      if (match.venueId) {
+        const teams = await api.teams.list(match.venueId);
+        setTeamNames(Object.fromEntries(teams.map((t) => [t.id, t.name])));
+      }
+    });
+    socket = io('/', { transports: ['websocket', 'polling'] });
+    socket.on('connect', () => socket!.emit(SOCKET_EVENTS.MATCH_JOIN, matchId));
+    socket.on(SOCKET_EVENTS.MATCH_STATE, (s: IndoorFootballMatchState) => setState(s));
+    return () => { socket?.disconnect(); };
+  }, [matchId]);
+
+  if (!state) return null;
+  const display = getFootballScoreboard(state);
+
+  return (
+    <div style={{ minHeight: '100vh', background: '#0a0e12', color: '#fff', padding: '2rem', fontFamily: 'system-ui' }}>
+      <div style={{ textAlign: 'center', marginBottom: '1rem', color: '#7d8fa3' }}>FOOTBALL · Half {display.half}</div>
       <div style={{ display: 'grid', gridTemplateColumns: '1fr auto 1fr', alignItems: 'center', gap: '2rem' }}>
         <div style={{ textAlign: 'center' }}>
           <div>{teamNames[display.homeTeamId] || 'Home'}</div>

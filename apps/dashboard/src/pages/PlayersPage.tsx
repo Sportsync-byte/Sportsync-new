@@ -11,6 +11,7 @@ export function PlayersPage() {
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
   const [teamId, setTeamId] = useState('');
+  const [phone, setPhone] = useState('');
   const [showForm, setShowForm] = useState(false);
 
   const teamMap = Object.fromEntries(teams.map((t) => [t.id, t.name]));
@@ -31,10 +32,12 @@ export function PlayersPage() {
       venueId: venue.id,
       firstName,
       lastName,
+      phone: phone || undefined,
       teamIds: teamId ? [teamId] : [],
     });
     setFirstName('');
     setLastName('');
+    setPhone('');
     setShowForm(false);
     load();
   };
@@ -54,6 +57,7 @@ export function PlayersPage() {
             <input placeholder="First name" value={firstName} onChange={(e) => setFirstName(e.target.value)} style={inputStyle} />
             <input placeholder="Last name" value={lastName} onChange={(e) => setLastName(e.target.value)} style={inputStyle} />
           </div>
+          <input placeholder="Mobile (E.164 e.g. +64211234567)" value={phone} onChange={(e) => setPhone(e.target.value)} style={{ ...inputStyle, marginBottom: '0.5rem' }} />
           <select value={teamId} onChange={(e) => setTeamId(e.target.value)} style={inputStyle}>
             <option value="">Select team (optional)</option>
             {teams.map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}
@@ -69,6 +73,7 @@ export function PlayersPage() {
           <thead>
             <tr style={{ borderBottom: '1px solid var(--border)' }}>
               <th style={thStyle}>Name</th>
+              <th style={thStyle}>Phone</th>
               <th style={thStyle}>Team</th>
             </tr>
           </thead>
@@ -78,6 +83,7 @@ export function PlayersPage() {
                 <td style={tdStyle}>
                   <Link to={p.slug ? `/p/${p.slug}` : `/players/${p.id}`} style={{ fontWeight: 600 }}>{p.displayName}</Link>
                 </td>
+                <td style={tdStyle}>{p.phone || '—'}</td>
                 <td style={tdStyle}>{p.teamIds.map((id) => teamMap[id]).filter(Boolean).join(', ') || '—'}</td>
               </tr>
             ))}

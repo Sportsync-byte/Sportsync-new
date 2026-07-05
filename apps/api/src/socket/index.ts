@@ -17,6 +17,7 @@ import { completeFixtureFromMatchState } from '../services/match-completion.js';
 import { getNetballScoreboard } from '@sportsync/sport-rules';
 import type { NetballMatchState } from '@sportsync/shared';
 import { registerNetballHandlers } from './netball.js';
+import { registerFootballHandlers } from './football.js';
 
 async function persistCricket(
   io: Server,
@@ -43,6 +44,7 @@ export function setupSocketIO(httpServer: HttpServer, corsOrigin: string | strin
   });
 
   registerNetballHandlers(io);
+  registerFootballHandlers(io);
 
   io.on('connection', (socket) => {
     socket.on(SOCKET_EVENTS.MATCH_JOIN, async (matchId: string) => {

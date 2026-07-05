@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { INDOOR_CRICKET_FORMATS, createNetballMatch, INDOOR_NETBALL_FORMAT } from '@sportsync/shared';
+import { INDOOR_CRICKET_FORMATS, createNetballMatch, INDOOR_NETBALL_FORMAT, createFootballMatch, INDOOR_FOOTBALL_FORMAT } from '@sportsync/shared';
 import { createMatch } from '@sportsync/sport-rules';
 import { CompetitionModel } from '../models/competition.js';
 import { FixtureModel } from '../models/fixture.js';
@@ -83,6 +83,8 @@ fixturesRouter.post('/:fixtureId/start', async (req, res) => {
 
   if (sport === 'indoor-netball') {
     state = createNetballMatch(matchId, fixture.id, fixture.homeTeamId, fixture.awayTeamId, INDOOR_NETBALL_FORMAT);
+  } else if (sport === 'indoor-football') {
+    state = createFootballMatch(matchId, fixture.id, fixture.homeTeamId, fixture.awayTeamId, INDOOR_FOOTBALL_FORMAT);
   } else {
     sport = 'indoor-cricket';
     const formatKey = competition.settings.formatKey || 'six-aside';

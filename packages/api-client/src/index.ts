@@ -124,6 +124,8 @@ export const api = {
         method: 'POST',
         body: JSON.stringify({ to }),
       }),
+    runScheduler: () =>
+      request<{ processed: number; sent: number }>('/notifications/sms/run-scheduler', { method: 'POST' }),
   },
   teams: {
     list: (venueId: string) => request<Team[]>(`/teams/venue/${venueId}`),
@@ -212,6 +214,11 @@ export const api = {
       request<{ url: string }>('/billing/checkout', {
         method: 'POST',
         body: JSON.stringify({ venueId }),
+      }),
+    checkoutScoreboards: (venueId: string, quantity = 1) =>
+      request<{ url: string }>('/billing/checkout-scoreboards', {
+        method: 'POST',
+        body: JSON.stringify({ venueId, quantity }),
       }),
   },
 };

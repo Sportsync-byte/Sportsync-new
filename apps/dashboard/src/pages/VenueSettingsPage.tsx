@@ -12,6 +12,8 @@ export function VenueSettingsPage() {
   const [billing, setBilling] = useState<{ billingStatus: string; stripeConfigured: boolean } | null>(null);
   const [smsStatus, setSmsStatus] = useState<{ configured: boolean; enabled: boolean; error?: string } | null>(null);
   const [smsEnabled, setSmsEnabled] = useState(false);
+  const [autoSms, setAutoSms] = useState(false);
+  const [reminderHours, setReminderHours] = useState(24);
   const [upgrading, setUpgrading] = useState(false);
   const billingNotice = searchParams.get('billing');
 
@@ -27,6 +29,8 @@ export function VenueSettingsPage() {
       api.billing.status(venue.id).then(setBilling).catch(() => setBilling(null));
       api.notifications.smsStatus(venue.id).then(setSmsStatus).catch(() => setSmsStatus(null));
       setSmsEnabled(venue.smsEnabled ?? false);
+      setAutoSms(venue.smsAutoRemindersEnabled ?? false);
+      setReminderHours(venue.smsReminderHoursBefore ?? 24);
     }
   }, [venue]);
 
@@ -57,6 +61,15 @@ export function VenueSettingsPage() {
     } finally {
       setUpgrading(false);
     }
+  };
+
+  const saveSmsSettings = async () => {
+    if (!venue) return;
+    await api.venues.update(venue.id, {
+      smsAutoRemindersEnabled: autoSms,
+      smsReminderHoursBefore: reminderHours,
+    });
+    await refreshVenues();
   };
 
   const toggleSms = async () => {
@@ -124,8 +137,28 @@ export function VenueSettingsPage() {
             )}
           </div>
           <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginTop: '0.75rem' }}>
-            Send fixture reminder texts to players from the competition fixtures tab.
+            Add player phone numbers for automatic fixture reminders. Manual send available on fixtures tab.
           </p>
+          {smsEnabled && (
+            <div style={{ marginTop: '1rem' }}>
+              <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.9rem', marginBottom: '0.75rem' }}>
+                <input type="checkbox" checked={autoSms} onChange={(e) => setAutoSms(e.target.checked)} />
+                Auto-send reminders {reminderHours}h before fixtures
+              </label>
+              <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                <input
+                  type="number"
+                  min={1}
+                  max={168}
+                  value={reminderHours}
+                  onChange={(e) => setReminderHours(Number(e.target.value))}
+                  style={{ width: 72, padding: '0.5rem', borderRadius: 6, border: '1px solid var(--border)', background: 'var(--bg)', color: 'var(--text)' }}
+                />
+                <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>hours before</span>
+                <button onClick={saveSmsSettings}>Save</button>
+              </div>
+            </div>
+          )}
         </div>
       )}
 

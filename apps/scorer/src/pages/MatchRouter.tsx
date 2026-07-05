@@ -3,6 +3,7 @@ import { useParams } from 'react-router-dom';
 import { api } from '@sportsync/api-client';
 import { ScoringPage } from './ScoringPage';
 import { NetballScoringPage } from './NetballScoringPage';
+import { FootballScoringPage } from './FootballScoringPage';
 
 export function MatchRouter() {
   const { matchId } = useParams<{ matchId: string }>();
@@ -18,5 +19,6 @@ export function MatchRouter() {
 
   if (!sport) return <div style={{ padding: '2rem', textAlign: 'center' }}>Loading match...</div>;
   if (sport === 'indoor-netball') return <NetballScoringPage />;
+  if (sport === 'indoor-football') return <FootballScoringPage />;
   return <ScoringPage />;
 }

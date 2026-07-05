@@ -72,3 +72,8 @@ notificationsRouter.post('/sms/fixture/:fixtureId', authMiddleware, requireRole(
   const result = await sendBulkSms(to, message);
   res.json({ ...result, message });
 });
+
+notificationsRouter.post('/sms/run-scheduler', authMiddleware, requireRole('owner', 'admin'), async (_req, res) => {
+  const result = await import('../services/sms-scheduler.js').then((m) => m.processScheduledSmsReminders());
+  res.json(result);
+});

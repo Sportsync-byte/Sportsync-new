@@ -8,6 +8,7 @@ const playerSchema = new Schema(
     lastName: { type: String, required: true },
     displayName: { type: String, required: true },
     slug: { type: String, required: true, index: true },
+    phone: String,
     teamIds: [{ type: String }],
   },
   { timestamps: true }
@@ -24,5 +25,6 @@ export interface PlayerDocument {
   lastName: string;
   displayName: string;
   slug: string;
+  phone?: string;
   teamIds: string[];
 }

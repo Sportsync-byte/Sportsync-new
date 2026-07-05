@@ -92,7 +92,7 @@ playersRouter.get('/:playerId', async (req, res) => {
 });
 
 playersRouter.post('/', async (req, res) => {
-  const { venueId, firstName, lastName, displayName, teamIds } = req.body;
+  const { venueId, firstName, lastName, displayName, teamIds, phone } = req.body;
   if (!venueId || !firstName || !lastName) {
     res.status(400).json({ error: 'venueId, firstName, and lastName are required' });
     return;
@@ -112,6 +112,7 @@ playersRouter.post('/', async (req, res) => {
     displayName: name,
     slug,
     teamIds: teamIds || [],
+    ...(phone ? { phone } : {}),
   });
   res.status(201).json(player);
 });

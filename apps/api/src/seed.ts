@@ -13,6 +13,7 @@ import { newId } from './utils/id.js';
 import { generateLicenseKey } from './utils/license.js';
 import { uniquePlayerSlug } from './utils/slug.js';
 import { ScoreboardDeviceModel } from './models/scoreboard-device.js';
+import { SmsReminderLogModel } from './models/sms-reminder-log.js';
 import { generateRoundRobinFixtures } from '@sportsync/shared';
 import bcrypt from 'bcryptjs';
 
@@ -31,6 +32,7 @@ async function seed() {
     TeamModel.deleteMany({}),
     CourtModel.deleteMany({}),
     ScoreboardDeviceModel.deleteMany({}),
+    SmsReminderLogModel.deleteMany({}),
     VenueModel.deleteMany({}),
   ]);
 
@@ -46,6 +48,8 @@ async function seed() {
     sports: ['indoor-cricket', 'indoor-netball', 'indoor-football'],
     licenseKey,
     smsEnabled: true,
+    smsAutoRemindersEnabled: true,
+    smsReminderHoursBefore: 24,
   });
 
   const courts = await CourtModel.insertMany(
@@ -73,6 +77,7 @@ async function seed() {
   );
 
   const players = [];
+  let phoneIndex = 0;
   for (const team of teams) {
     for (let i = 1; i <= 8; i++) {
       const displayName = `${team.name} Player ${i}`;
@@ -80,6 +85,7 @@ async function seed() {
         const existing = await PlayerModel.findOne({ venueId: vId, slug: s });
         return Boolean(existing);
       });
+      phoneIndex += 1;
       players.push({
         id: newId(),
         venueId,
@@ -88,6 +94,7 @@ async function seed() {
         displayName,
         slug,
         teamIds: [team.id],
+        ...(i <= 3 ? { phone: `+6421${String(100000 + phoneIndex).slice(-7)}` } : {}),
       });
     }
   }
@@ -177,6 +184,45 @@ async function seed() {
     }))
   );
   console.log(`Netball Competition ID: ${netballCompId}`);
+
+  const footballTeams = teams.slice(0, 4);
+  const footballCompId = newId();
+  await CompetitionModel.create({
+    id: footballCompId,
+    venueId,
+    sport: 'indoor-football',
+    name: 'Spring 5-a-side Football 2026',
+    season: '2026',
+    status: 'active',
+    teamIds: footballTeams.map((t) => t.id),
+    settings: {
+      pointsForWin: 3,
+      pointsForTie: 1,
+      pointsForLoss: 0,
+      doubleRoundRobin: false,
+    },
+    ladder: [],
+  });
+
+  const footballFixtures = generateRoundRobinFixtures(
+    footballTeams.map((t) => t.id),
+    footballCompId,
+    'default',
+    {
+      startDate: new Date().toISOString(),
+      daysBetweenRounds: 7,
+      courtIds: courts.map((c) => c.id),
+      slotMinutes: 60,
+    }
+  );
+  await FixtureModel.insertMany(
+    footballFixtures.map((f) => ({
+      ...f,
+      id: newId(),
+      venueId,
+    }))
+  );
+  console.log(`Football Competition ID: ${footballCompId}`);
 
   console.log(`Teams: ${teams.length}, Players: ${players.length}, Fixtures: ${generated.length}`);
 

@@ -32,7 +32,7 @@ export function CompetitionsPage() {
     await api.competitions.create({
       venueId: venue.id,
       name,
-      sport: sport as 'indoor-cricket' | 'indoor-netball',
+      sport: sport as 'indoor-cricket' | 'indoor-netball' | 'indoor-football',
       teamIds: selectedTeams,
       settings: { formatKey: 'six-aside', doubleRoundRobin: false, pointsForWin: 4, pointsForTie: 2, pointsForLoss: 0 },
     });
@@ -64,6 +64,7 @@ export function CompetitionsPage() {
           <select value={sport} onChange={(e) => setSport(e.target.value)} style={{ ...inputStyle, marginTop: '0.5rem' }}>
             <option value="indoor-cricket">Indoor Cricket</option>
             <option value="indoor-netball">Indoor Netball</option>
+            <option value="indoor-football">Indoor Football</option>
           </select>
           <div style={{ marginTop: '1rem' }}>
             <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '0.5rem' }}>Teams</div>

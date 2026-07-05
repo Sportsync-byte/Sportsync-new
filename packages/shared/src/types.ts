@@ -66,6 +66,8 @@ export interface Venue {
   maxScoreboards?: number;
   extraScoreboards?: number;
   smsEnabled?: boolean;
+  smsAutoRemindersEnabled?: boolean;
+  smsReminderHoursBefore?: number;
   createdAt: string;
   updatedAt: string;
 }
@@ -132,6 +134,7 @@ export interface Player {
   lastName: string;
   displayName: string;
   slug: string;
+  phone?: string;
   teamIds: string[];
 }
 
@@ -260,6 +263,10 @@ export const SOCKET_EVENTS = {
   NETBALL_START: 'netball:start',
   NETBALL_END_QUARTER: 'netball:end-quarter',
   NETBALL_TIMER: 'netball:timer',
+  FOOTBALL_GOAL: 'football:goal',
+  FOOTBALL_START: 'football:start',
+  FOOTBALL_END_HALF: 'football:end-half',
+  FOOTBALL_TIMER: 'football:timer',
   SCOREBOARD_UPDATE: 'scoreboard:update',
   VENUE_LIVE: 'venue:live',
 } as const;

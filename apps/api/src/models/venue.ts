@@ -27,6 +27,8 @@ const venueSchema = new Schema(
     licenseKey: { type: String, unique: true, sparse: true, index: true },
     extraScoreboards: { type: Number, default: 0 },
     smsEnabled: { type: Boolean, default: false },
+    smsAutoRemindersEnabled: { type: Boolean, default: false },
+    smsReminderHoursBefore: { type: Number, default: 24 },
   },
   { timestamps: true }
 );
@@ -47,4 +49,6 @@ export interface VenueDocument {
   licenseKey?: string;
   extraScoreboards?: number;
   smsEnabled?: boolean;
+  smsAutoRemindersEnabled?: boolean;
+  smsReminderHoursBefore?: number;
 }

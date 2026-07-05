@@ -3,10 +3,15 @@ import { VenueModel } from '../models/venue.js';
 
 const stripeSecret = process.env.STRIPE_SECRET_KEY;
 const stadiumPriceId = process.env.STRIPE_STADIUM_PRICE_ID;
+const scoreboardPriceId = process.env.STRIPE_SCOREBOARD_PRICE_ID;
 const dashboardUrl = process.env.DASHBOARD_URL || 'http://localhost:5173';
 
 export function isStripeConfigured(): boolean {
   return Boolean(stripeSecret && stadiumPriceId);
+}
+
+export function isScoreboardBillingConfigured(): boolean {
+  return Boolean(stripeSecret && scoreboardPriceId);
 }
 
 function getStripe(): Stripe {
@@ -48,6 +53,44 @@ export async function createStadiumCheckoutSession(venueId: string, customerEmai
   return { url: session.url };
 }
 
+export async function createScoreboardCheckoutSession(
+  venueId: string,
+  quantity = 1,
+  customerEmail?: string
+) {
+  if (!isScoreboardBillingConfigured()) {
+    throw new Error('Scoreboard billing is not configured. Set STRIPE_SCOREBOARD_PRICE_ID.');
+  }
+
+  const venue = await VenueModel.findOne({ id: venueId });
+  if (!venue) throw new Error('Venue not found');
+
+  const stripe = getStripe();
+  let customerId = venue.stripeCustomerId;
+
+  if (!customerId) {
+    const customer = await stripe.customers.create({
+      email: customerEmail,
+      metadata: { venueId: venue.id },
+      name: venue.name,
+    });
+    customerId = customer.id;
+    await VenueModel.updateOne({ id: venueId }, { stripeCustomerId: customerId });
+  }
+
+  const session = await stripe.checkout.sessions.create({
+    mode: 'subscription',
+    customer: customerId,
+    line_items: [{ price: scoreboardPriceId!, quantity }],
+    success_url: `${dashboardUrl}/scoreboards?billing=scoreboard-success`,
+    cancel_url: `${dashboardUrl}/scoreboards?billing=cancel`,
+    metadata: { venueId: venue.id, type: 'extra-scoreboard', quantity: String(quantity) },
+    subscription_data: { metadata: { venueId: venue.id, type: 'extra-scoreboard' } },
+  });
+
+  return { url: session.url };
+}
+
 export async function handleStripeWebhook(rawBody: Buffer, signature: string) {
   const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
   if (!stripeSecret || !webhookSecret) {
@@ -61,7 +104,15 @@ export async function handleStripeWebhook(rawBody: Buffer, signature: string) {
     case 'checkout.session.completed': {
       const session = event.data.object as Stripe.Checkout.Session;
       const venueId = session.metadata?.venueId;
-      if (venueId && session.subscription) {
+      if (!venueId) break;
+
+      if (session.metadata?.type === 'extra-scoreboard') {
+        const qty = Number(session.metadata.quantity) || 1;
+        await VenueModel.updateOne({ id: venueId }, { $inc: { extraScoreboards: qty } });
+        break;
+      }
+
+      if (session.subscription) {
         await VenueModel.updateOne(
           { id: venueId },
           {

@@ -109,7 +109,11 @@ npm run dev:scoreboard  # Terminal 5 — http://localhost:5176 (TV display)
 - **Netball scorer** assist picker and undo last goal
 - **Venue licence keys** — one key per venue, activates scoreboard displays
 - **Scoreboard PC app** — install on TV hardware, pairs via licence key over internet
-- **SMS fixture reminders** — Stadium tier (Twilio)
+- **SMS fixture reminders** — Stadium tier (Twilio), manual send + automated scheduler
+- **Automated SMS reminders** — configurable hours before fixture, player phone numbers
+- **Stripe checkout for extra scoreboard licences** — purchase add-ons from dashboard
+- **Indoor football** — 5-a-side scoring, scorer UI, TV scoreboard display
+- **Scoreboard PWA kiosk mode** — installable app with fullscreen display
 - **Marketing website** — landing page, pricing, venue login CTA
 - **Branded venue host login** — competition management portal
 - Real-time Socket.IO updates
@@ -140,14 +144,21 @@ Each venue gets a unique licence key (`SSYNC-XXXX-XXXX-XXXX`). Install the **Sco
 
 ## SMS notifications (Stadium)
 
-Configure Twilio in `apps/api/.env`, enable SMS in Venue Settings, then send fixture reminders from the competition fixtures tab.
+Configure Twilio in `apps/api/.env`, enable SMS in Venue Settings, then:
+
+- **Manual reminders** — send from the competition fixtures tab
+- **Automated reminders** — enable "Auto SMS reminders" in Venue Settings; players with phone numbers on roster receive reminders before fixtures (scheduler runs every 15 min)
+
+Set `STRIPE_SCOREBOARD_PRICE_ID` for Stripe checkout when purchasing extra scoreboard licences.
 
 ## Roadmap
 
-- [ ] Additional sports modules (football, basketball)
-- [ ] Automated scheduled SMS before fixtures
+- [ ] Additional sports modules (basketball)
 - [ ] Native scoreboard installer (Electron)
-- [ ] Stripe checkout for extra scoreboard licences
+- [x] Automated scheduled SMS before fixtures
+- [x] Stripe checkout for extra scoreboard licences
+- [x] Indoor football sport module
+- [x] Scoreboard PWA kiosk mode
 
 ## License
 

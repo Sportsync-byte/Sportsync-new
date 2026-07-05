@@ -19,7 +19,7 @@ export function CompetitionDetailPage() {
   const teamMap = Object.fromEntries(teams.map((t) => [t.id, t.name]));
   const courtMap = Object.fromEntries(courts.map((c) => [c.id, c.name]));
   const playerMap = Object.fromEntries(players.map((p) => [p.id, p.displayName]));
-  const isNetball = competition?.sport === 'indoor-netball';
+  const isGoalSport = competition?.sport === 'indoor-netball' || competition?.sport === 'indoor-football';
 
   const load = async () => {
     if (!competitionId) return;
@@ -154,7 +154,7 @@ export function CompetitionDetailPage() {
                 )}
                 {f.status === 'completed' && (
                   <div style={{ fontSize: '0.85rem', marginTop: '0.25rem' }}>
-                    {isNetball
+                    {isGoalSport
                       ? `${f.homeScore} – ${f.awayScore}`
                       : `${f.homeScore}/${f.homeWickets} – ${f.awayScore}/${f.awayWickets}`}
                   </div>
@@ -218,7 +218,7 @@ export function CompetitionDetailPage() {
               <tr style={{ borderBottom: '1px solid var(--border)' }}>
                 <th style={thStyle}>Player</th>
                 <th style={thStyle}>M</th>
-                {isNetball ? (
+                {isGoalSport ? (
                   <>
                     <th style={thStyle}>Goals</th>
                     <th style={thStyle}>Assists</th>
@@ -235,14 +235,14 @@ export function CompetitionDetailPage() {
               </tr>
             </thead>
             <tbody>
-              {(isNetball
+              {(isGoalSport
                 ? [...stats].sort((a, b) => b.goals - a.goals)
                 : [...stats].sort((a, b) => b.runs - a.runs)
               ).map((s) => (
                 <tr key={s.playerId} style={{ borderBottom: '1px solid var(--border)' }}>
                   <td style={tdStyle}>{playerMap[s.playerId] || s.playerId}</td>
                   <td style={tdStyle}>{s.matchesPlayed}</td>
-                  {isNetball ? (
+                  {isGoalSport ? (
                     <>
                       <td style={tdStyle}>{s.goals}</td>
                       <td style={tdStyle}>{s.assists}</td>

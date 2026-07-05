@@ -18,6 +18,7 @@ import { licensesRouter } from './routes/licenses.js';
 import { scoreboardsRouter } from './routes/scoreboards.js';
 import { notificationsRouter } from './routes/notifications.js';
 import { handleStripeWebhook } from './services/billing.js';
+import { startSmsReminderScheduler } from './services/sms-scheduler.js';
 import { setupSocketIO } from './socket/index.js';
 
 const PORT = Number(process.env.PORT) || 3001;
@@ -81,6 +82,7 @@ async function start() {
     await connectDatabase(MONGODB_URI);
     httpServer.listen(PORT, () => {
       console.log(`SportSync API listening on port ${PORT}`);
+      startSmsReminderScheduler();
     });
   } catch (error) {
     console.error('Failed to start server:', error);
