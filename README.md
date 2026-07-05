@@ -86,20 +86,29 @@ npm run dev:scorer      # Terminal 3 — http://localhost:5174
 - Runs 0–7, extras, dismissals (-5), strike rotation, undo
 - Partnership and bowler selection prompts
 - Innings transitions and match completion
+- **Innings timer with siren** (countdown, start/pause/reset, TV display)
+- **Player statistics** aggregated per match and season
+- **JWT authentication** with roles (owner, admin, competition-manager, scorer, viewer)
+- **Venue branding** on scoreboard displays (colours, logo, sponsor banner)
+- **Indoor netball** sport module (types + scoring engine foundation)
 - Real-time Socket.IO updates
 - Offline ball queue with sync on reconnect
 - Public live scores search (no login)
 - TV scoreboard display mode
 
+## Demo login
+
+After running `npm run seed`:
+
+- **Email:** admin@sportsync.local
+- **Password:** admin123
+
 ## Roadmap
 
-- [ ] Authentication and role-based access
-- [ ] Venue branding on scoreboards
-- [ ] Timer with automatic siren
-- [ ] Player statistics aggregation
-- [ ] Additional sports (netball, basketball, football)
-- [ ] Subscription tiers (Club / Stadium)
+- [ ] Netball scorer UI and fixture flow
+- [ ] Public player profiles
 - [ ] PDF/CSV export
+- [ ] Subscription tiers (Club / Stadium)
 
 ## License
 

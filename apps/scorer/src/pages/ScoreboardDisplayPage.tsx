@@ -1,16 +1,22 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { io } from 'socket.io-client';
 import { SOCKET_EVENTS } from '@sportsync/shared';
-import type { IndoorCricketMatchState } from '@sportsync/shared';
+import type { IndoorCricketMatchState, Venue } from '@sportsync/shared';
 import { api } from '@sportsync/api-client';
 import { getScoreboardDisplay } from '@sportsync/sport-rules';
+import { playSiren, formatTimer } from '../lib/siren';
 
 export function ScoreboardDisplayPage() {
   const { matchId } = useParams<{ matchId: string }>();
   const [state, setState] = useState<IndoorCricketMatchState | null>(null);
+  const [venue, setVenue] = useState<Venue | null>(null);
   const [teamNames, setTeamNames] = useState<Record<string, string>>({});
   const [playerNames, setPlayerNames] = useState<Record<string, string>>({});
+  const sirenPlayed = useRef(false);
+
+  const primary = venue?.branding.primaryColor || '#00d4aa';
+  const secondary = venue?.branding.secondaryColor || '#141b24';
 
   useEffect(() => {
     if (!matchId) return;
@@ -21,10 +27,12 @@ export function ScoreboardDisplayPage() {
       const match = doc as { state: IndoorCricketMatchState; venueId?: string };
       setState(match.state);
       if (match.venueId) {
-        const [teams, players] = await Promise.all([
+        const [venueData, teams, players] = await Promise.all([
+          api.venues.get(match.venueId),
           api.teams.list(match.venueId),
           api.players.list(match.venueId),
         ]);
+        setVenue(venueData);
         setTeamNames(Object.fromEntries(teams.map((t) => [t.id, t.name])));
         setPlayerNames(Object.fromEntries(players.map((p) => [p.id, p.displayName])));
       }
@@ -39,9 +47,18 @@ export function ScoreboardDisplayPage() {
     };
   }, [matchId]);
 
+  const innings = state?.innings[state.battingTeamIndex];
+  useEffect(() => {
+    if (innings?.timerExpired && !sirenPlayed.current) {
+      sirenPlayed.current = true;
+      playSiren();
+    }
+    if (!innings?.timerExpired) sirenPlayed.current = false;
+  }, [innings?.timerExpired]);
+
   if (!state) {
     return (
-      <div style={{ minHeight: '100vh', display: 'grid', placeItems: 'center', background: '#0a0e12', color: '#fff' }}>
+      <div style={{ minHeight: '100vh', display: 'grid', placeItems: 'center', background: secondary, color: '#fff' }}>
         Loading scoreboard...
       </div>
     );
@@ -52,29 +69,50 @@ export function ScoreboardDisplayPage() {
   const bowling = display.bowlingTeam;
 
   return (
-    <div style={{ minHeight: '100vh', background: 'linear-gradient(180deg, #0a0e12 0%, #141b24 100%)', color: '#fff', padding: '2rem', fontFamily: 'system-ui, sans-serif' }}>
-      <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
-        <div style={{ fontSize: '1rem', color: '#7d8fa3', letterSpacing: '0.1em', textTransform: 'uppercase' }}>SportSync Live</div>
-        {state.status === 'completed' && (
-          <div style={{ fontSize: '1.5rem', color: '#00d4aa', marginTop: '0.5rem' }}>Match Complete</div>
+    <div style={{ minHeight: '100vh', background: `linear-gradient(180deg, ${secondary} 0%, #0a0e12 100%)`, color: '#fff', padding: '2rem', fontFamily: 'system-ui, sans-serif' }}>
+      <div style={{ textAlign: 'center', marginBottom: '1.5rem' }}>
+        {venue?.branding.logoUrl && (
+          <img src={venue.branding.logoUrl} alt="" style={{ height: 48, marginBottom: '0.75rem' }} />
+        )}
+        <div style={{ fontSize: '1rem', color: '#7d8fa3', letterSpacing: '0.1em', textTransform: 'uppercase' }}>
+          {venue?.name || 'SportSync Live'}
+        </div>
+        {venue?.branding.sponsorBannerUrl && (
+          <img src={venue.branding.sponsorBannerUrl} alt="Sponsor" style={{ maxHeight: 40, marginTop: '0.75rem' }} />
         )}
       </div>
 
-      {/* Bowling team (top) */}
+      {display.current.timerSeconds != null && (
+        <div
+          style={{
+            textAlign: 'center',
+            marginBottom: '1.5rem',
+            padding: '1rem',
+            borderRadius: 12,
+            background: display.current.timerExpired ? 'rgba(255,71,87,0.2)' : 'rgba(255,255,255,0.05)',
+            border: `2px solid ${display.current.timerExpired ? '#ff4757' : primary}`,
+          }}
+        >
+          <div style={{ fontSize: '0.8rem', color: '#7d8fa3' }}>INNINGS TIMER</div>
+          <div style={{ fontSize: '3rem', fontWeight: 900, color: display.current.timerExpired ? '#ff4757' : primary }}>
+            {formatTimer(display.current.timerSeconds)}
+            {display.current.timerExpired && ' — TIME!'}
+          </div>
+        </div>
+      )}
+
+      {state.status === 'completed' && (
+        <div style={{ textAlign: 'center', fontSize: '1.5rem', color: primary, marginBottom: '1rem' }}>Match Complete</div>
+      )}
+
       <div style={{ opacity: 0.7, marginBottom: '1rem', padding: '1.5rem', background: 'rgba(255,255,255,0.05)', borderRadius: 16 }}>
         <div style={{ fontSize: '1.25rem', fontWeight: 600 }}>{teamNames[bowling.teamId] || bowling.teamId}</div>
         <div style={{ fontSize: '3rem', fontWeight: 800 }}>{bowling.total}/{bowling.wickets}</div>
-        <div style={{ display: 'flex', gap: '1rem', marginTop: '0.5rem' }}>
-          {bowling.partnerships.map((p) => (
-            <span key={p.partnership} style={{ fontSize: '0.9rem', color: '#7d8fa3' }}>P{p.partnership}: {p.runs}</span>
-          ))}
-        </div>
       </div>
 
-      {/* Batting team (bottom, highlighted) */}
-      <div style={{ padding: '2rem', background: 'rgba(0,212,170,0.1)', borderRadius: 16, border: '2px solid rgba(0,212,170,0.3)' }}>
+      <div style={{ padding: '2rem', background: `${primary}18`, borderRadius: 16, border: `2px solid ${primary}55` }}>
         <div style={{ fontSize: '1.5rem', fontWeight: 600 }}>{teamNames[batting.teamId] || batting.teamId}</div>
-        <div style={{ fontSize: '5rem', fontWeight: 900, lineHeight: 1 }}>{batting.total}/{batting.wickets}</div>
+        <div style={{ fontSize: '5rem', fontWeight: 900, lineHeight: 1, color: primary }}>{batting.total}/{batting.wickets}</div>
 
         <div style={{ display: 'flex', gap: '2rem', marginTop: '1.5rem', flexWrap: 'wrap' }}>
           <div>
@@ -89,10 +127,6 @@ export function ScoreboardDisplayPage() {
           <div>
             <div style={{ fontSize: '0.8rem', color: '#7d8fa3' }}>Over</div>
             <div style={{ fontSize: '1.25rem', fontWeight: 600 }}>{display.current.over}.{display.current.ball}</div>
-          </div>
-          <div>
-            <div style={{ fontSize: '0.8rem', color: '#7d8fa3' }}>Partnership</div>
-            <div style={{ fontSize: '1.25rem', fontWeight: 600 }}>{display.current.partnership}</div>
           </div>
         </div>
       </div>

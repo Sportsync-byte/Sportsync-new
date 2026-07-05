@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { VenueModel } from '../models/venue.js';
 import { CourtModel } from '../models/court.js';
+import { authMiddleware, requireRole } from '../middleware/auth.js';
 import { newId } from '../utils/id.js';
 
 export const venuesRouter = Router();
@@ -28,7 +29,7 @@ venuesRouter.get('/:venueId', async (req, res) => {
   res.json(venue);
 });
 
-venuesRouter.post('/', async (req, res) => {
+venuesRouter.post('/', authMiddleware, requireRole('admin', 'owner'), async (req, res) => {
   const { name, slug, productTier, branding, courtCount, sports } = req.body;
   const id = newId();
   const venue = await VenueModel.create({
@@ -60,7 +61,7 @@ venuesRouter.get('/:venueId/courts', async (req, res) => {
   res.json(courts);
 });
 
-venuesRouter.patch('/:venueId', async (req, res) => {
+venuesRouter.patch('/:venueId', authMiddleware, requireRole('admin', 'owner'), async (req, res) => {
   const venue = await VenueModel.findOneAndUpdate(
     { id: req.params.venueId },
     { $set: req.body },

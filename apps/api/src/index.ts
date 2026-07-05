@@ -10,6 +10,8 @@ import { competitionsRouter } from './routes/competitions.js';
 import { fixturesRouter } from './routes/fixtures.js';
 import { matchesRouter } from './routes/matches.js';
 import { liveRouter } from './routes/live.js';
+import { authRouter } from './routes/auth.js';
+import { statsRouter } from './routes/stats.js';
 import { setupSocketIO } from './socket/index.js';
 
 const PORT = Number(process.env.PORT) || 3001;
@@ -29,6 +31,8 @@ app.get('/health', (_req, res) => {
   res.json({ status: 'ok', service: 'sportsync-api' });
 });
 
+app.use('/api/auth', authRouter);
+app.use('/api/stats', statsRouter);
 app.use('/api/venues', venuesRouter);
 app.use('/api/teams', teamsRouter);
 app.use('/api/players', playersRouter);

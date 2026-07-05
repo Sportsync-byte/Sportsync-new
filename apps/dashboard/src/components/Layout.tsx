@@ -1,6 +1,7 @@
 import { NavLink } from 'react-router-dom';
 import type { ReactNode } from 'react';
 import { useVenue } from '../context/VenueContext';
+import { useAuth } from '../context/AuthContext';
 
 const navItems = [
   { to: '/', label: 'Overview' },
@@ -8,10 +9,12 @@ const navItems = [
   { to: '/teams', label: 'Teams' },
   { to: '/players', label: 'Players' },
   { to: '/live', label: 'Live Scores' },
+  { to: '/settings', label: 'Venue Settings' },
 ];
 
 export function Layout({ children }: { children: ReactNode }) {
   const { venue, venues, setVenueId, loading } = useVenue();
+  const { user, logout } = useAuth();
 
   return (
     <div style={{ display: 'flex', minHeight: '100vh' }}>
@@ -72,7 +75,16 @@ export function Layout({ children }: { children: ReactNode }) {
           ))}
         </nav>
 
-        <a
+        <div style={{ marginTop: 'auto', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+          {user && (
+            <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', padding: '0 0.75rem' }}>
+              {user.name} · {user.role}
+            </div>
+          )}
+          <button onClick={logout} style={{ padding: '0.5rem 0.75rem', borderRadius: 8, background: 'transparent', color: 'var(--text-muted)', border: '1px solid var(--border)', fontSize: '0.85rem' }}>
+            Sign Out
+          </button>
+          <a
           href="http://localhost:5174"
           target="_blank"
           rel="noreferrer"
@@ -89,6 +101,7 @@ export function Layout({ children }: { children: ReactNode }) {
         >
           Open Scorer App
         </a>
+        </div>
       </aside>
       <main style={{ flex: 1, padding: '2rem', overflow: 'auto' }}>{children}</main>
     </div>

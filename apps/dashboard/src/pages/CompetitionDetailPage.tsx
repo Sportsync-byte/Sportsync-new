@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { api } from '@sportsync/api-client';
-import type { Competition, Fixture, Team, LadderEntry } from '@sportsync/shared';
+import { api, type PlayerStats } from '@sportsync/api-client';
+import type { Competition, Fixture, Team, LadderEntry, Player } from '@sportsync/shared';
 
 export function CompetitionDetailPage() {
   const { competitionId } = useParams<{ competitionId: string }>();
@@ -9,22 +9,29 @@ export function CompetitionDetailPage() {
   const [fixtures, setFixtures] = useState<Fixture[]>([]);
   const [teams, setTeams] = useState<Team[]>([]);
   const [ladder, setLadder] = useState<LadderEntry[]>([]);
-  const [tab, setTab] = useState<'fixtures' | 'ladder'>('fixtures');
+  const [stats, setStats] = useState<PlayerStats[]>([]);
+  const [players, setPlayers] = useState<Player[]>([]);
+  const [tab, setTab] = useState<'fixtures' | 'ladder' | 'stats'>('fixtures');
 
   const teamMap = Object.fromEntries(teams.map((t) => [t.id, t.name]));
+  const playerMap = Object.fromEntries(players.map((p) => [p.id, p.displayName]));
 
   const load = async () => {
     if (!competitionId) return;
     const comp = await api.competitions.get(competitionId);
     setCompetition(comp);
-    const [fix, teamList, ladderData] = await Promise.all([
+    const [fix, teamList, ladderData, statsData, playerList] = await Promise.all([
       api.competitions.fixtures(competitionId),
       api.teams.list(comp.venueId),
       api.competitions.ladder(competitionId),
+      api.competitions.stats(competitionId),
+      api.players.list(comp.venueId),
     ]);
     setFixtures(fix);
     setTeams(teamList);
     setLadder(ladderData);
+    setStats(statsData);
+    setPlayers(playerList);
   };
 
   useEffect(() => {
@@ -56,6 +63,7 @@ export function CompetitionDetailPage() {
       <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1.5rem' }}>
         <button className={tab === 'fixtures' ? 'primary' : ''} onClick={() => setTab('fixtures')}>Fixtures</button>
         <button className={tab === 'ladder' ? 'primary' : ''} onClick={() => setTab('ladder')}>Ladder</button>
+        <button className={tab === 'stats' ? 'primary' : ''} onClick={() => setTab('stats')}>Statistics</button>
         {fixtures.length === 0 && (
           <button className="primary" onClick={generateFixtures} style={{ marginLeft: 'auto' }}>
             Generate Fixtures
@@ -121,6 +129,42 @@ export function CompetitionDetailPage() {
             ))}
           </tbody>
         </table>
+      )}
+
+      {tab === 'stats' && (
+        <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
+          <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+            <thead>
+              <tr style={{ borderBottom: '1px solid var(--border)' }}>
+                <th style={thStyle}>Player</th>
+                <th style={thStyle}>M</th>
+                <th style={thStyle}>Runs</th>
+                <th style={thStyle}>4s</th>
+                <th style={thStyle}>6s</th>
+                <th style={thStyle}>Wkts</th>
+                <th style={thStyle}>Ct</th>
+              </tr>
+            </thead>
+            <tbody>
+              {[...stats].sort((a, b) => b.runs - a.runs).map((s) => (
+                <tr key={s.playerId} style={{ borderBottom: '1px solid var(--border)' }}>
+                  <td style={tdStyle}>{playerMap[s.playerId] || s.playerId}</td>
+                  <td style={tdStyle}>{s.matchesPlayed}</td>
+                  <td style={tdStyle}>{s.runs}</td>
+                  <td style={tdStyle}>{s.fours}</td>
+                  <td style={tdStyle}>{s.sixes}</td>
+                  <td style={tdStyle}>{s.wickets}</td>
+                  <td style={tdStyle}>{s.catches}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          {stats.length === 0 && (
+            <div style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-muted)' }}>
+              Statistics appear after matches are completed.
+            </div>
+          )}
+        </div>
       )}
     </div>
   );

@@ -62,5 +62,14 @@ export function useMatchSocket(matchId: string | null) {
     }
   }, [matchId]);
 
-  return { socket, connected, matchState, emitBall, emitSetup, emitUndo };
+  const emitTimer = useCallback(
+    (timerSeconds: number, timerRunning: boolean) => {
+      if (matchId && socketRef.current?.connected) {
+        socketRef.current.emit(SOCKET_EVENTS.MATCH_TIMER, { matchId, timerSeconds, timerRunning });
+      }
+    },
+    [matchId]
+  );
+
+  return { socket, connected, matchState, emitBall, emitSetup, emitUndo, emitTimer };
 }

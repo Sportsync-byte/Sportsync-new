@@ -7,8 +7,11 @@ import { PlayerModel } from './models/player.js';
 import { CompetitionModel } from './models/competition.js';
 import { FixtureModel } from './models/fixture.js';
 import { MatchStateModel } from './models/match-state.js';
+import { UserModel } from './models/user.js';
+import { PlayerStatsModel } from './models/player-stats.js';
 import { newId } from './utils/id.js';
 import { generateRoundRobinFixtures } from '@sportsync/shared';
+import bcrypt from 'bcryptjs';
 
 const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/sportsync';
 
@@ -16,6 +19,8 @@ async function seed() {
   await connectDatabase(MONGODB_URI);
 
   await Promise.all([
+    PlayerStatsModel.deleteMany({}),
+    UserModel.deleteMany({}),
     MatchStateModel.deleteMany({}),
     FixtureModel.deleteMany({}),
     CompetitionModel.deleteMany({}),
@@ -116,6 +121,17 @@ async function seed() {
   console.log(`Venue slug: action-christchurch`);
   console.log(`Competition ID: ${competitionId}`);
   console.log(`Teams: ${teams.length}, Players: ${players.length}, Fixtures: ${generated.length}`);
+
+  const passwordHash = await bcrypt.hash('admin123', 10);
+  await UserModel.create({
+    id: newId(),
+    email: 'admin@sportsync.local',
+    passwordHash,
+    name: 'Venue Admin',
+    venueId,
+    role: 'owner',
+  });
+  console.log('Admin user: admin@sportsync.local / admin123');
 
   await disconnectDatabase();
 }

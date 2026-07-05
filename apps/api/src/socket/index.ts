@@ -126,6 +126,10 @@ export function setupSocketIO(httpServer: HttpServer, corsOrigin: string | strin
         const innings = state.innings[state.battingTeamIndex];
         innings.timerSeconds = payload.timerSeconds;
         innings.timerRunning = payload.timerRunning;
+        if (payload.timerSeconds === 0) {
+          innings.timerExpired = true;
+          innings.timerRunning = false;
+        }
         await persistAndBroadcast(io, payload.matchId, state, doc.venueId);
       }
     );

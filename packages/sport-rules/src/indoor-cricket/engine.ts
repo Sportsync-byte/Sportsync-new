@@ -161,6 +161,8 @@ export function setBowler(state: IndoorCricketMatchState, bowlerId: string): Ind
   innings.bowlerId = bowlerId;
   if (newState.status === 'not-started') {
     newState.status = 'innings-1';
+    innings.timerSeconds = newState.format.inningsDurationSeconds;
+    innings.timerExpired = false;
   }
   newState.pendingPrompt = checkPrompts(newState);
   return newState;
@@ -285,6 +287,9 @@ export function endInnings(state: IndoorCricketMatchState): IndoorCricketMatchSt
     nextInnings.currentPartnership = 1;
     nextInnings.currentOver = 0;
     nextInnings.ballsInOver = 0;
+    nextInnings.timerSeconds = newState.format.inningsDurationSeconds;
+    nextInnings.timerRunning = false;
+    nextInnings.timerExpired = false;
     newState.pendingPrompt = 'batters';
   } else {
     newState.status = 'completed';
@@ -342,9 +347,32 @@ export function getScoreboardDisplay(state: IndoorCricketMatchState) {
       ball: batting.ballsInOver,
       timerSeconds: batting.timerSeconds,
       timerRunning: batting.timerRunning,
+      timerExpired: batting.timerExpired,
     },
     status: state.status,
     pendingPrompt: state.pendingPrompt,
     winnerTeamId: state.winnerTeamId,
   };
+}
+
+export function resetInningsTimer(state: IndoorCricketMatchState): IndoorCricketMatchState {
+  const newState = structuredClone(state);
+  const innings = getCurrentInnings(newState);
+  innings.timerSeconds = newState.format.inningsDurationSeconds;
+  innings.timerRunning = false;
+  innings.timerExpired = false;
+  return newState;
+}
+
+export function tickTimer(state: IndoorCricketMatchState): IndoorCricketMatchState {
+  const newState = structuredClone(state);
+  const innings = getCurrentInnings(newState);
+  if (!innings.timerRunning || innings.timerExpired) return state;
+
+  innings.timerSeconds = Math.max(0, innings.timerSeconds - 1);
+  if (innings.timerSeconds === 0) {
+    innings.timerRunning = false;
+    innings.timerExpired = true;
+  }
+  return newState;
 }

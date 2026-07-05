@@ -3,6 +3,8 @@ import { useParams } from 'react-router-dom';
 import type { RunValue, DismissalType, Player } from '@sportsync/shared';
 import { api } from '@sportsync/api-client';
 import { useMatchSocket } from '../hooks/useMatchSocket';
+import { useInningsTimer } from '../hooks/useInningsTimer';
+import { TimerBar } from '../components/TimerBar';
 import { Scoreboard } from '../components/Scoreboard';
 import { RunPad } from '../components/RunPad';
 import { ExtrasPad } from '../components/ExtrasPad';
@@ -14,7 +16,7 @@ const RUN_VALUES: RunValue[] = [0, 1, 2, 3, 4, 5, 6, 7];
 
 export function ScoringPage() {
   const { matchId } = useParams<{ matchId: string }>();
-  const { connected, matchState, emitBall, emitSetup, emitUndo } = useMatchSocket(matchId ?? null);
+  const { connected, matchState, emitBall, emitSetup, emitUndo, emitTimer } = useMatchSocket(matchId ?? null);
   const [players, setPlayers] = useState<Player[]>([]);
   const [teamNames, setTeamNames] = useState<Record<string, string>>({});
   const [showWicket, setShowWicket] = useState(false);
@@ -33,6 +35,13 @@ export function ScoringPage() {
       }
     });
   }, [matchId]);
+
+  const timer = useInningsTimer({
+    matchId: matchId ?? '',
+    matchState,
+    connected,
+    emitTimer,
+  });
 
   if (!matchId || !matchState) {
     return <div style={{ padding: '2rem', textAlign: 'center' }}>Connecting to match...</div>;
@@ -70,6 +79,17 @@ export function ScoringPage() {
       </header>
 
       <Scoreboard state={matchState} teamNames={teamNames} playerNames={Object.fromEntries(players.map((p) => [p.id, p.displayName]))} />
+
+      {!matchState.pendingPrompt && matchState.status !== 'not-started' && (
+        <TimerBar
+          seconds={innings.timerSeconds}
+          running={innings.timerRunning}
+          expired={innings.timerExpired}
+          onStart={timer.start}
+          onPause={timer.pause}
+          onReset={timer.reset}
+        />
+      )}
 
       {matchState.pendingPrompt === 'batters' && (
         <PlayerPicker

@@ -5,6 +5,7 @@ import { CompetitionModel } from '../models/competition.js';
 import { FixtureModel } from '../models/fixture.js';
 import { MatchStateModel } from '../models/match-state.js';
 import { buildLadderFromFixtures } from '../services/ladder.js';
+import { persistMatchStats } from '../services/stats.js';
 import { newId } from '../utils/id.js';
 import { getMatchResult } from '@sportsync/sport-rules';
 import type { IndoorCricketMatchState } from '@sportsync/shared';
@@ -106,6 +107,7 @@ export async function completeFixtureFromMatch(matchId: string, state: IndoorCri
     const fixtures = await FixtureModel.find({ competitionId: competition.id });
     const ladder = buildLadderFromFixtures(competition, fixtures);
     await CompetitionModel.updateOne({ id: competition.id }, { ladder });
+    await persistMatchStats(state, fixture.venueId, fixture.competitionId);
   }
 
   return fixture;

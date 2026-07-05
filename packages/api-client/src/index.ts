@@ -8,13 +8,55 @@ import type {
   LadderEntry,
   LiveMatchSummary,
   CompetitionSettings,
+  AdminRole,
 } from '@sportsync/shared';
 
 const BASE = '/api';
+const TOKEN_KEY = 'sportsync-token';
+
+export interface AuthUser {
+  id: string;
+  email: string;
+  name: string;
+  venueId: string;
+  role: AdminRole;
+}
+
+export interface PlayerStats {
+  playerId: string;
+  venueId: string;
+  competitionId?: string;
+  matchesPlayed: number;
+  runs: number;
+  ballsFaced: number;
+  fours: number;
+  sixes: number;
+  ducks: number;
+  wickets: number;
+  overs: number;
+  runsConceded: number;
+  catches: number;
+  runOuts: number;
+  stumpings: number;
+}
+
+function getToken(): string | null {
+  return localStorage.getItem(TOKEN_KEY);
+}
+
+export function setAuthToken(token: string | null): void {
+  if (token) localStorage.setItem(TOKEN_KEY, token);
+  else localStorage.removeItem(TOKEN_KEY);
+}
 
 async function request<T>(path: string, options?: RequestInit): Promise<T> {
+  const token = getToken();
   const res = await fetch(`${BASE}${path}`, {
-    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    headers: {
+      'Content-Type': 'application/json',
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      ...options?.headers,
+    },
     ...options,
   });
   if (!res.ok) {
@@ -26,12 +68,23 @@ async function request<T>(path: string, options?: RequestInit): Promise<T> {
 }
 
 export const api = {
+  auth: {
+    login: (email: string, password: string) =>
+      request<{ token: string; user: AuthUser }>('/auth/login', {
+        method: 'POST',
+        body: JSON.stringify({ email, password }),
+      }),
+    me: () => request<{ user: AuthUser }>('/auth/me'),
+    logout: () => setAuthToken(null),
+  },
   venues: {
     list: () => request<Venue[]>('/venues'),
     get: (id: string) => request<Venue>(`/venues/${id}`),
     getBySlug: (slug: string) => request<Venue>(`/venues/slug/${slug}`),
     create: (data: Partial<Venue>) =>
       request<Venue>('/venues', { method: 'POST', body: JSON.stringify(data) }),
+    update: (id: string, data: Partial<Venue>) =>
+      request<Venue>(`/venues/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
     courts: (venueId: string) => request<Court[]>(`/venues/${venueId}/courts`),
   },
   teams: {
@@ -48,6 +101,10 @@ export const api = {
     create: (data: Partial<Player> & { venueId: string; firstName: string; lastName: string }) =>
       request<Player>('/players', { method: 'POST', body: JSON.stringify(data) }),
     delete: (id: string) => request<void>(`/players/${id}`, { method: 'DELETE' }),
+    stats: (playerId: string, competitionId?: string) =>
+      request<PlayerStats[]>(
+        `/stats/player/${playerId}${competitionId ? `?competitionId=${competitionId}` : ''}`
+      ),
   },
   competitions: {
     list: (venueId: string) => request<Competition[]>(`/competitions/venue/${venueId}`),
@@ -56,6 +113,7 @@ export const api = {
       venueId: string;
       name: string;
       season?: string;
+      sport?: string;
       teamIds?: string[];
       settings?: Partial<CompetitionSettings>;
     }) => request<Competition>('/competitions', { method: 'POST', body: JSON.stringify(data) }),
@@ -68,12 +126,15 @@ export const api = {
         body: JSON.stringify(opts || {}),
       }),
     ladder: (id: string) => request<LadderEntry[]>(`/competitions/${id}/ladder`),
+    stats: (id: string) => request<PlayerStats[]>(`/stats/competition/${id}`),
+    leaders: (id: string) =>
+      request<{ topRunScorer?: PlayerStats; topWicketTaker?: PlayerStats; playerCount: number }>(
+        `/stats/competition/${id}/leaders`
+      ),
   },
   fixtures: {
     list: (venueId: string, status?: string) =>
-      request<Fixture[]>(
-        `/fixtures/venue/${venueId}${status ? `?status=${status}` : ''}`
-      ),
+      request<Fixture[]>(`/fixtures/venue/${venueId}${status ? `?status=${status}` : ''}`),
     start: (fixtureId: string) =>
       request<{ fixture: Fixture; match: unknown }>(`/fixtures/${fixtureId}/start`, {
         method: 'POST',

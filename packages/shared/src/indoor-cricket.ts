@@ -6,6 +6,8 @@ export interface IndoorCricketFormatConfig {
   totalOvers: number;
   partnerships: number;
   oversPerPartnership: number;
+  /** Countdown duration per innings in seconds (default 20 minutes) */
+  inningsDurationSeconds: number;
   /** Final partnership uses special batter/bowler selection rules */
   finalPartnershipSpecialRules?: boolean;
 }
@@ -20,6 +22,7 @@ export const INDOOR_CRICKET_FORMATS: Record<
     totalOvers: 12,
     partnerships: 3,
     oversPerPartnership: 4,
+    inningsDurationSeconds: 1200,
   },
   'eight-aside': {
     format: 'eight-aside',
@@ -27,6 +30,7 @@ export const INDOOR_CRICKET_FORMATS: Record<
     totalOvers: 16,
     partnerships: 4,
     oversPerPartnership: 4,
+    inningsDurationSeconds: 1200,
   },
   'asia-cup': {
     format: 'asia-cup',
@@ -34,6 +38,7 @@ export const INDOOR_CRICKET_FORMATS: Record<
     totalOvers: 8,
     partnerships: 4,
     oversPerPartnership: 2,
+    inningsDurationSeconds: 900,
     finalPartnershipSpecialRules: true,
   },
 };
@@ -100,6 +105,7 @@ export interface InningsState {
   bowlerId: string;
   timerSeconds: number;
   timerRunning: boolean;
+  timerExpired: boolean;
   ballHistory: BallEvent[];
 }
 
@@ -162,6 +168,7 @@ export function createEmptyInnings(teamId: string): InningsState {
     bowlerId: '',
     timerSeconds: 0,
     timerRunning: false,
+    timerExpired: false,
     ballHistory: [],
   };
 }
