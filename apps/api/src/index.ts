@@ -12,6 +12,7 @@ import { matchesRouter } from './routes/matches.js';
 import { liveRouter } from './routes/live.js';
 import { authRouter } from './routes/auth.js';
 import { statsRouter } from './routes/stats.js';
+import { exportRouter } from './routes/export.js';
 import { setupSocketIO } from './socket/index.js';
 
 const PORT = Number(process.env.PORT) || 3001;
@@ -33,6 +34,7 @@ app.get('/health', (_req, res) => {
 
 app.use('/api/auth', authRouter);
 app.use('/api/stats', statsRouter);
+app.use('/api/export', exportRouter);
 app.use('/api/venues', venuesRouter);
 app.use('/api/teams', teamsRouter);
 app.use('/api/players', playersRouter);

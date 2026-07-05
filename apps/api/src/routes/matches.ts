@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { INDOOR_CRICKET_FORMATS } from '@sportsync/shared';
-import { getScoreboardDisplay } from '@sportsync/sport-rules';
+import { getScoreboardDisplay, getNetballScoreboard } from '@sportsync/sport-rules';
+import type { IndoorCricketMatchState, NetballMatchState } from '@sportsync/shared';
 import { MatchStateModel } from '../models/match-state.js';
 import { searchLiveMatches } from '../services/live.js';
 
@@ -17,10 +18,11 @@ matchesRouter.get('/:matchId', async (req, res) => {
       res.status(404).json({ error: 'Match not found' });
       return;
     }
-    res.json({
-      ...doc.toObject(),
-      scoreboard: getScoreboardDisplay(doc.state),
-    });
+    const scoreboard =
+      doc.sport === 'indoor-netball'
+        ? getNetballScoreboard(doc.state as NetballMatchState)
+        : getScoreboardDisplay(doc.state as IndoorCricketMatchState);
+    res.json({ ...doc.toObject(), scoreboard });
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: 'Failed to fetch match' });

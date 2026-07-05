@@ -41,6 +41,23 @@ export function VenueSettingsPage() {
     <div>
       <h1 style={{ fontSize: '1.75rem', marginBottom: '1.5rem' }}>Venue Settings</h1>
 
+      {venue && (
+        <div className="card" style={{ marginBottom: '1.5rem', maxWidth: 480 }}>
+          <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>Subscription</div>
+          <div style={{ fontWeight: 700, fontSize: '1.1rem', textTransform: 'capitalize', marginTop: '0.25rem' }}>
+            {venue.productTier} tier
+          </div>
+          {venue.subscription && (
+            <ul style={{ marginTop: '0.75rem', paddingLeft: '1.25rem', color: 'var(--text-muted)', fontSize: '0.9rem' }}>
+              <li>Up to {venue.subscription.maxCourts} courts</li>
+              <li>{venue.subscription.maxSports} sport(s)</li>
+              <li>{venue.subscription.maxCompetitions} active competitions</li>
+              <li>{venue.subscription.advancedReporting ? 'CSV export enabled' : 'CSV export requires Stadium tier'}</li>
+            </ul>
+          )}
+        </div>
+      )}
+
       <div className="card" style={{ maxWidth: 480 }}>
         <label style={labelStyle}>Venue Name</label>
         <input value={form.name || ''} onChange={(e) => setForm({ ...form, name: e.target.value })} style={inputStyle} />

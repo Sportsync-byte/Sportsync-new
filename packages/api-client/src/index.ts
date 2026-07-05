@@ -101,6 +101,9 @@ export const api = {
     create: (data: Partial<Player> & { venueId: string; firstName: string; lastName: string }) =>
       request<Player>('/players', { method: 'POST', body: JSON.stringify(data) }),
     delete: (id: string) => request<void>(`/players/${id}`, { method: 'DELETE' }),
+    publicProfile: (playerId: string) => request<import('@sportsync/shared').PlayerProfile>(`/players/public/${playerId}`),
+    search: (venueId: string, q: string) =>
+      request<import('@sportsync/shared').Player[]>(`/players/public/search?venueId=${venueId}&q=${encodeURIComponent(q)}`),
     stats: (playerId: string, competitionId?: string) =>
       request<PlayerStats[]>(
         `/stats/player/${playerId}${competitionId ? `?competitionId=${competitionId}` : ''}`
@@ -147,6 +150,11 @@ export const api = {
     },
   },
   matches: {
-    get: (matchId: string) => request<unknown>(`/matches/${matchId}`),
+    get: (matchId: string) => request<{ sport?: string; venueId?: string; state: unknown }>(`/matches/${matchId}`),
+  },
+  export: {
+    ladderCsv: (competitionId: string) => `/api/export/competition/${competitionId}/ladder.csv`,
+    statsCsv: (competitionId: string) => `/api/export/competition/${competitionId}/stats.csv`,
+    scorecardCsv: (matchId: string) => `/api/export/match/${matchId}/scorecard.csv`,
   },
 };

@@ -120,6 +120,42 @@ async function seed() {
   console.log(`Venue ID: ${venueId}`);
   console.log(`Venue slug: action-christchurch`);
   console.log(`Competition ID: ${competitionId}`);
+
+  const netballTeams = teams.slice(0, 4);
+  const netballCompId = newId();
+  await CompetitionModel.create({
+    id: netballCompId,
+    venueId,
+    sport: 'indoor-netball',
+    name: 'Winter Indoor Netball 2026',
+    season: '2026',
+    status: 'active',
+    teamIds: netballTeams.map((t) => t.id),
+    settings: {
+      pointsForWin: 4,
+      pointsForTie: 2,
+      pointsForLoss: 0,
+      doubleRoundRobin: false,
+    },
+    ladder: [],
+  });
+
+  const netballFixtures = generateRoundRobinFixtures(
+    netballTeams.map((t) => t.id),
+    netballCompId,
+    'default',
+    { startDate: new Date().toISOString(), daysBetweenRounds: 7 }
+  );
+  await FixtureModel.insertMany(
+    netballFixtures.map((f, idx) => ({
+      ...f,
+      id: newId(),
+      venueId,
+      courtId: courts[(idx + 2) % courts.length].id,
+    }))
+  );
+  console.log(`Netball Competition ID: ${netballCompId}`);
+
   console.log(`Teams: ${teams.length}, Players: ${players.length}, Fixtures: ${generated.length}`);
 
   const passwordHash = await bcrypt.hash('admin123', 10);

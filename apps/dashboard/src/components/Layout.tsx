@@ -7,6 +7,7 @@ const navItems = [
   { to: '/', label: 'Overview' },
   { to: '/competitions', label: 'Competitions' },
   { to: '/teams', label: 'Teams' },
+  { to: '/players/search', label: 'Find Players' },
   { to: '/players', label: 'Players' },
   { to: '/live', label: 'Live Scores' },
   { to: '/settings', label: 'Venue Settings' },

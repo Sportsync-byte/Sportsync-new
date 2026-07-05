@@ -3,6 +3,7 @@ import { generateRoundRobinFixtures } from '@sportsync/shared';
 import { CompetitionModel } from '../models/competition.js';
 import { FixtureModel } from '../models/fixture.js';
 import { buildLadderFromFixtures } from '../services/ladder.js';
+import { checkCanAddCompetition, checkCanUseSport } from '../services/subscription.js';
 import { newId } from '../utils/id.js';
 
 export const competitionsRouter = Router();
@@ -30,12 +31,25 @@ competitionsRouter.post('/', async (req, res) => {
     return;
   }
 
+  const sportId = sport || 'indoor-cricket';
+  const compCheck = await checkCanAddCompetition(venueId);
+  if (!compCheck.ok) {
+    res.status(403).json({ error: compCheck.error });
+    return;
+  }
+
+  const sportCheck = await checkCanUseSport(venueId, sportId);
+  if (!sportCheck.ok) {
+    res.status(403).json({ error: sportCheck.error });
+    return;
+  }
+
   const competition = await CompetitionModel.create({
     id: newId(),
     venueId,
     name,
     season: season || new Date().getFullYear().toString(),
-    sport: sport || 'indoor-cricket',
+    sport: sportId,
     teamIds: teamIds || [],
     settings: settings || {},
     status: status || 'draft',

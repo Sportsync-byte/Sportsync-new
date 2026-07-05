@@ -2,13 +2,14 @@ import { Router } from 'express';
 import { VenueModel } from '../models/venue.js';
 import { CourtModel } from '../models/court.js';
 import { authMiddleware, requireRole } from '../middleware/auth.js';
+import { enrichVenue } from '../utils/venue.js';
 import { newId } from '../utils/id.js';
 
 export const venuesRouter = Router();
 
 venuesRouter.get('/', async (_req, res) => {
   const venues = await VenueModel.find().sort({ name: 1 });
-  res.json(venues);
+  res.json(venues.map((v) => enrichVenue(v.toObject())));
 });
 
 venuesRouter.get('/slug/:slug', async (req, res) => {
@@ -17,7 +18,7 @@ venuesRouter.get('/slug/:slug', async (req, res) => {
     res.status(404).json({ error: 'Venue not found' });
     return;
   }
-  res.json(venue);
+  res.json(enrichVenue(venue.toObject()));
 });
 
 venuesRouter.get('/:venueId', async (req, res) => {
@@ -26,7 +27,7 @@ venuesRouter.get('/:venueId', async (req, res) => {
     res.status(404).json({ error: 'Venue not found' });
     return;
   }
-  res.json(venue);
+  res.json(enrichVenue(venue.toObject()));
 });
 
 venuesRouter.post('/', authMiddleware, requireRole('admin', 'owner'), async (req, res) => {

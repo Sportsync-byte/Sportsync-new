@@ -1,8 +1,59 @@
 import { Router } from 'express';
 import { PlayerModel } from '../models/player.js';
+import { TeamModel } from '../models/team.js';
+import { PlayerStatsModel } from '../models/player-stats.js';
+import { CompetitionModel } from '../models/competition.js';
 import { newId } from '../utils/id.js';
 
 export const playersRouter = Router();
+
+playersRouter.get('/public/search', async (req, res) => {
+  const { venueId, q } = req.query;
+  if (!venueId || !q) {
+    res.status(400).json({ error: 'venueId and q are required' });
+    return;
+  }
+  const search = String(q).toLowerCase();
+  const players = await PlayerModel.find({ venueId: String(venueId) });
+  const filtered = players.filter(
+    (p) =>
+      p.displayName.toLowerCase().includes(search) ||
+      p.firstName.toLowerCase().includes(search) ||
+      p.lastName.toLowerCase().includes(search)
+  );
+  res.json(filtered.slice(0, 20));
+});
+
+playersRouter.get('/public/:playerId', async (req, res) => {
+  const player = await PlayerModel.findOne({ id: req.params.playerId });
+  if (!player) {
+    res.status(404).json({ error: 'Player not found' });
+    return;
+  }
+
+  const [teams, stats] = await Promise.all([
+    TeamModel.find({ id: { $in: player.teamIds } }),
+    PlayerStatsModel.find({ playerId: player.id }),
+  ]);
+
+  const competitionIds = [...new Set(stats.map((s) => s.competitionId).filter(Boolean))];
+  const competitions = await CompetitionModel.find({ id: { $in: competitionIds } });
+  const compMap = Object.fromEntries(competitions.map((c) => [c.id, c]));
+
+  res.json({
+    ...player.toObject(),
+    teams,
+    stats: stats.map((s) => ({
+      competitionId: s.competitionId,
+      competitionName: compMap[s.competitionId || '']?.name,
+      season: compMap[s.competitionId || '']?.season,
+      matchesPlayed: s.matchesPlayed,
+      runs: s.runs,
+      wickets: s.wickets,
+      catches: s.catches,
+    })),
+  });
+});
 
 playersRouter.get('/venue/:venueId', async (req, res) => {
   const filter: Record<string, unknown> = { venueId: req.params.venueId };

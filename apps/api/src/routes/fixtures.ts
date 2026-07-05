@@ -1,14 +1,10 @@
 import { Router } from 'express';
-import { INDOOR_CRICKET_FORMATS } from '@sportsync/shared';
+import { INDOOR_CRICKET_FORMATS, createNetballMatch, INDOOR_NETBALL_FORMAT } from '@sportsync/shared';
 import { createMatch } from '@sportsync/sport-rules';
 import { CompetitionModel } from '../models/competition.js';
 import { FixtureModel } from '../models/fixture.js';
 import { MatchStateModel } from '../models/match-state.js';
-import { buildLadderFromFixtures } from '../services/ladder.js';
-import { persistMatchStats } from '../services/stats.js';
 import { newId } from '../utils/id.js';
-import { getMatchResult } from '@sportsync/sport-rules';
-import type { IndoorCricketMatchState } from '@sportsync/shared';
 
 export const fixturesRouter = Router();
 
@@ -62,23 +58,24 @@ fixturesRouter.post('/:fixtureId/start', async (req, res) => {
     return;
   }
 
-  const formatKey = competition.settings.formatKey || 'six-aside';
-  const format = INDOOR_CRICKET_FORMATS[formatKey];
   const matchId = newId();
+  let sport = competition.sport;
+  let state: unknown;
 
-  const state = createMatch(
-    matchId,
-    fixture.id,
-    fixture.homeTeamId,
-    fixture.awayTeamId,
-    format
-  );
+  if (sport === 'indoor-netball') {
+    state = createNetballMatch(matchId, fixture.id, fixture.homeTeamId, fixture.awayTeamId, INDOOR_NETBALL_FORMAT);
+  } else {
+    sport = 'indoor-cricket';
+    const formatKey = competition.settings.formatKey || 'six-aside';
+    const format = INDOOR_CRICKET_FORMATS[formatKey];
+    state = createMatch(matchId, fixture.id, fixture.homeTeamId, fixture.awayTeamId, format);
+  }
 
   const match = await MatchStateModel.create({
     matchId,
     fixtureId: fixture.id,
     venueId: fixture.venueId,
-    sport: 'indoor-cricket',
+    sport,
     state,
   });
 
@@ -89,26 +86,5 @@ fixturesRouter.post('/:fixtureId/start', async (req, res) => {
   res.status(201).json({ fixture, match });
 });
 
-export async function completeFixtureFromMatch(matchId: string, state: IndoorCricketMatchState) {
-  const fixture = await FixtureModel.findOne({ matchId });
-  if (!fixture || fixture.status === 'completed') return null;
-
-  const result = getMatchResult(state);
-  fixture.status = 'completed';
-  fixture.homeScore = result.homeScore;
-  fixture.awayScore = result.awayScore;
-  fixture.homeWickets = result.homeWickets;
-  fixture.awayWickets = result.awayWickets;
-  fixture.winnerTeamId = result.winnerTeamId ?? undefined;
-  await fixture.save();
-
-  const competition = await CompetitionModel.findOne({ id: fixture.competitionId });
-  if (competition) {
-    const fixtures = await FixtureModel.find({ competitionId: competition.id });
-    const ladder = buildLadderFromFixtures(competition, fixtures);
-    await CompetitionModel.updateOne({ id: competition.id }, { ladder });
-    await persistMatchStats(state, fixture.venueId, fixture.competitionId);
-  }
-
-  return fixture;
-}
+// Re-export for backwards compatibility
+export { completeFixtureFromMatchState as completeFixtureFromMatch } from '../services/match-completion.js';

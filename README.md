@@ -91,6 +91,10 @@ npm run dev:scorer      # Terminal 3 — http://localhost:5174
 - **JWT authentication** with roles (owner, admin, competition-manager, scorer, viewer)
 - **Venue branding** on scoreboard displays (colours, logo, sponsor banner)
 - **Indoor netball** sport module (types + scoring engine foundation)
+- **Netball scorer UI** end-to-end with quarter timer and TV display
+- **Public player profiles** with search (no login required to view)
+- **CSV export** for ladder, statistics, and scorecards
+- **Subscription tiers** — Club vs Stadium limits enforced on competitions
 - Real-time Socket.IO updates
 - Offline ball queue with sync on reconnect
 - Public live scores search (no login)

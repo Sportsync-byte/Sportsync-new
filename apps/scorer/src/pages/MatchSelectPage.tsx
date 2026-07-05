@@ -1,10 +1,11 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { api } from '@sportsync/api-client';
-import type { Fixture, Team } from '@sportsync/shared';
+import type { Competition, Fixture, Team } from '@sportsync/shared';
 
 export function MatchSelectPage() {
   const [fixtures, setFixtures] = useState<Fixture[]>([]);
+  const [competitions, setCompetitions] = useState<Record<string, Competition>>({});
   const [teams, setTeams] = useState<Team[]>([]);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
@@ -28,12 +29,14 @@ export function MatchSelectPage() {
           setLoading(false);
           return;
         }
-        const [fix, teamList] = await Promise.all([
+        const [fix, teamList, compList] = await Promise.all([
           api.fixtures.list(venue.id),
           api.teams.list(venue.id),
+          api.competitions.list(venue.id),
         ]);
         setFixtures(fix.filter((f) => f.status === 'scheduled' || f.status === 'live'));
         setTeams(teamList);
+        setCompetitions(Object.fromEntries(compList.map((c) => [c.id, c])));
       } catch (e) {
         console.error(e);
       } finally {
@@ -81,7 +84,7 @@ export function MatchSelectPage() {
               }}
             >
               <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
-                Round {f.round} · {f.status}
+                Round {f.round} · {f.status} · {competitions[f.competitionId]?.sport || 'sport'}
               </div>
               <div style={{ fontWeight: 700, fontSize: '1.1rem', marginTop: '0.25rem' }}>
                 {teamMap[f.homeTeamId] || 'Home'} vs {teamMap[f.awayTeamId] || 'Away'}

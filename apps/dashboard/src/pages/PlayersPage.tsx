@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { api } from '@sportsync/api-client';
 import type { Player, Team } from '@sportsync/shared';
 import { useVenue } from '../context/VenueContext';
@@ -74,7 +75,9 @@ export function PlayersPage() {
           <tbody>
             {players.map((p) => (
               <tr key={p.id} style={{ borderBottom: '1px solid var(--border)' }}>
-                <td style={tdStyle}>{p.displayName}</td>
+                <td style={tdStyle}>
+                  <Link to={`/players/${p.id}`} style={{ fontWeight: 600 }}>{p.displayName}</Link>
+                </td>
                 <td style={tdStyle}>{p.teamIds.map((id) => teamMap[id]).filter(Boolean).join(', ') || '—'}</td>
               </tr>
             ))}

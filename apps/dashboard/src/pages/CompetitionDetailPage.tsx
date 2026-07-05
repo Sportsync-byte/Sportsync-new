@@ -50,6 +50,18 @@ export function CompetitionDetailPage() {
     window.open('http://localhost:5174', '_blank');
   };
 
+  const downloadCsv = async (path: string, filename: string) => {
+    const token = localStorage.getItem('sportsync-token');
+    const res = await fetch(path, { headers: token ? { Authorization: `Bearer ${token}` } : {} });
+    const blob = await res.blob();
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
   if (!competition) return <div>Loading...</div>;
 
   return (
@@ -64,11 +76,13 @@ export function CompetitionDetailPage() {
         <button className={tab === 'fixtures' ? 'primary' : ''} onClick={() => setTab('fixtures')}>Fixtures</button>
         <button className={tab === 'ladder' ? 'primary' : ''} onClick={() => setTab('ladder')}>Ladder</button>
         <button className={tab === 'stats' ? 'primary' : ''} onClick={() => setTab('stats')}>Statistics</button>
-        {fixtures.length === 0 && (
-          <button className="primary" onClick={generateFixtures} style={{ marginLeft: 'auto' }}>
-            Generate Fixtures
-          </button>
-        )}
+        <div style={{ marginLeft: 'auto', display: 'flex', gap: '0.5rem' }}>
+          <button onClick={() => downloadCsv(api.export.ladderCsv(competition.id), 'ladder.csv')}>Export Ladder CSV</button>
+          <button onClick={() => downloadCsv(api.export.statsCsv(competition.id), 'stats.csv')}>Export Stats CSV</button>
+          {fixtures.length === 0 && (
+            <button className="primary" onClick={generateFixtures}>Generate Fixtures</button>
+          )}
+        </div>
       </div>
 
       {tab === 'fixtures' && (

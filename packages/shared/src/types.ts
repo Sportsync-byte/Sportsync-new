@@ -19,11 +19,40 @@ export type AdminRole =
   | 'scorer'
   | 'viewer';
 
+export interface VenueSubscription {
+  tier: ProductTier;
+  maxCourts: number;
+  maxSports: number;
+  maxCompetitions: number;
+  advancedReporting: boolean;
+  multiAdmin: boolean;
+}
+
+export const TIER_LIMITS: Record<ProductTier, VenueSubscription> = {
+  club: {
+    tier: 'club',
+    maxCourts: 2,
+    maxSports: 1,
+    maxCompetitions: 3,
+    advancedReporting: false,
+    multiAdmin: false,
+  },
+  stadium: {
+    tier: 'stadium',
+    maxCourts: 20,
+    maxSports: 10,
+    maxCompetitions: 50,
+    advancedReporting: true,
+    multiAdmin: true,
+  },
+};
+
 export interface Venue {
   id: string;
   name: string;
   slug: string;
   productTier: ProductTier;
+  subscription: VenueSubscription;
   branding: VenueBranding;
   courtCount: number;
   sports: SportId[];
@@ -68,6 +97,21 @@ export interface Player {
   lastName: string;
   displayName: string;
   teamIds: string[];
+}
+
+export interface PlayerSeasonStatsSummary {
+  competitionId: string;
+  competitionName?: string;
+  season?: string;
+  matchesPlayed: number;
+  runs: number;
+  wickets: number;
+  catches: number;
+}
+
+export interface PlayerProfile extends Player {
+  teams: Team[];
+  stats: PlayerSeasonStatsSummary[];
 }
 
 export interface CompetitionSettings {
@@ -170,6 +214,10 @@ export const SOCKET_EVENTS = {
   MATCH_UNDO: 'match:undo',
   MATCH_TIMER: 'match:timer',
   MATCH_SETUP: 'match:setup',
+  NETBALL_GOAL: 'netball:goal',
+  NETBALL_START: 'netball:start',
+  NETBALL_END_QUARTER: 'netball:end-quarter',
+  NETBALL_TIMER: 'netball:timer',
   SCOREBOARD_UPDATE: 'scoreboard:update',
   VENUE_LIVE: 'venue:live',
 } as const;
