@@ -1,0 +1,40 @@
+{
+  "name": "@sportsync/scoreboard-electron",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Native Electron wrapper for SportSync TV scoreboards",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "build:scoreboard": "npm run build -w @sportsync/scoreboard",
+    "pack": "npm run build:scoreboard && electron-builder --dir",
+    "dist": "npm run build:scoreboard && electron-builder"
+  },
+  "build": {
+    "appId": "com.sportsync.scoreboard",
+    "productName": "SportSync Scoreboard",
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "main.js",
+      "preload.js",
+      "../scoreboard/dist/**/*"
+    ],
+    "linux": {
+      "target": ["AppImage"],
+      "category": "Utility"
+    },
+    "win": {
+      "target": ["nsis"]
+    },
+    "mac": {
+      "target": ["dmg"],
+      "category": "public.app-category.sports"
+    }
+  },
+  "devDependencies": {
+    "electron": "^34.0.0",
+    "electron-builder": "^25.1.8"
+  }
+}

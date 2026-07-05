@@ -1,9 +1,10 @@
 interface ActionBarProps {
   onUndo: () => void;
+  onWicket: () => void;
   canUndo: boolean;
 }
 
-export function ActionBar({ onUndo, canUndo }: ActionBarProps) {
+export function ActionBar({ onUndo, onWicket, canUndo }: ActionBarProps) {
   return (
     <div
       style={{
@@ -29,6 +30,7 @@ export function ActionBar({ onUndo, canUndo }: ActionBarProps) {
         Undo Last Ball
       </button>
       <button
+        onClick={onWicket}
         style={{
           padding: '1rem',
           fontSize: '1rem',

@@ -10,6 +10,7 @@
     "typecheck": "tsc -b --noEmit"
   },
   "dependencies": {
+    "@sportsync/api-client": "*",
     "@sportsync/shared": "*",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",

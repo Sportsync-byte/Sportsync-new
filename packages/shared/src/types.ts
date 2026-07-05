@@ -19,16 +19,82 @@ export type AdminRole =
   | 'scorer'
   | 'viewer';
 
+export interface VenueSubscription {
+  tier: ProductTier;
+  maxCourts: number;
+  maxSports: number;
+  maxCompetitions: number;
+  maxScoreboards: number;
+  advancedReporting: boolean;
+  multiAdmin: boolean;
+  smsNotifications: boolean;
+}
+
+export const TIER_LIMITS: Record<ProductTier, VenueSubscription> = {
+  club: {
+    tier: 'club',
+    maxCourts: 2,
+    maxSports: 1,
+    maxCompetitions: 3,
+    maxScoreboards: 1,
+    advancedReporting: false,
+    multiAdmin: false,
+    smsNotifications: false,
+  },
+  stadium: {
+    tier: 'stadium',
+    maxCourts: 20,
+    maxSports: 10,
+    maxCompetitions: 50,
+    maxScoreboards: 4,
+    advancedReporting: true,
+    multiAdmin: true,
+    smsNotifications: true,
+  },
+};
+
 export interface Venue {
   id: string;
   name: string;
   slug: string;
   productTier: ProductTier;
+  subscription: VenueSubscription;
   branding: VenueBranding;
   courtCount: number;
   sports: SportId[];
+  licenseKey?: string;
+  maxScoreboards?: number;
+  extraScoreboards?: number;
+  smsEnabled?: boolean;
+  smsAutoRemindersEnabled?: boolean;
+  smsReminderHoursBefore?: number;
   createdAt: string;
   updatedAt: string;
+}
+
+export interface ScoreboardDevice {
+  id: string;
+  venueId: string;
+  name: string;
+  courtId?: string;
+  assignedMatchId?: string;
+  lastSeenAt?: string;
+  status: 'active' | 'revoked';
+  createdAt?: string;
+}
+
+export interface ScoreboardActivation {
+  deviceToken: string;
+  deviceId: string;
+  venueId: string;
+  venueName: string;
+}
+
+export interface ScoreboardSession {
+  device: ScoreboardDevice;
+  venue: Pick<Venue, 'id' | 'name' | 'branding'>;
+  matchId?: string;
+  sport?: SportId;
 }
 
 export interface VenueBranding {
@@ -67,7 +133,36 @@ export interface Player {
   firstName: string;
   lastName: string;
   displayName: string;
+  slug: string;
+  phone?: string;
+  smsOptOut?: boolean;
   teamIds: string[];
+}
+
+export interface PlayerSeasonStatsSummary {
+  competitionId: string;
+  competitionName?: string;
+  season?: string;
+  matchesPlayed: number;
+  runs: number;
+  wickets: number;
+  catches: number;
+  goals?: number;
+  assists?: number;
+}
+
+export interface PlayerProfile extends Player {
+  teams: Team[];
+  stats: PlayerSeasonStatsSummary[];
+}
+
+export interface CompetitionSettings {
+  formatKey?: 'six-aside' | 'eight-aside' | 'asia-cup';
+  pointsForWin: number;
+  pointsForTie: number;
+  pointsForLoss: number;
+  bonusPointThreshold?: number;
+  doubleRoundRobin: boolean;
 }
 
 export interface Competition {
@@ -77,7 +172,10 @@ export interface Competition {
   name: string;
   season: string;
   status: 'draft' | 'active' | 'completed';
+  teamIds: string[];
+  settings: CompetitionSettings;
   divisions: Division[];
+  ladder: LadderEntry[];
 }
 
 export interface Division {
@@ -104,6 +202,34 @@ export interface Fixture {
   scheduledAt?: string;
   status: 'scheduled' | 'live' | 'completed' | 'abandoned';
   matchId?: string;
+  homeScore?: number;
+  awayScore?: number;
+  homeWickets?: number;
+  awayWickets?: number;
+  winnerTeamId?: string;
+}
+
+export interface LiveMatchSummary {
+  matchId: string;
+  fixtureId: string;
+  venueId: string;
+  competitionId: string;
+  sport: SportId;
+  competitionName?: string;
+  courtId?: string;
+  courtName?: string;
+  homeTeamId: string;
+  homeTeamName?: string;
+  awayTeamId: string;
+  awayTeamName?: string;
+  homeScore: number;
+  awayScore: number;
+  homeWickets?: number;
+  awayWickets?: number;
+  status: string;
+  over?: number;
+  ball?: number;
+  quarter?: number;
 }
 
 export interface LadderEntry {
@@ -132,7 +258,29 @@ export const SOCKET_EVENTS = {
   MATCH_BALL: 'match:ball',
   MATCH_UNDO: 'match:undo',
   MATCH_TIMER: 'match:timer',
+  MATCH_SETUP: 'match:setup',
+  NETBALL_GOAL: 'netball:goal',
+  NETBALL_UNDO: 'netball:undo',
+  NETBALL_START: 'netball:start',
+  NETBALL_END_QUARTER: 'netball:end-quarter',
+  NETBALL_TIMER: 'netball:timer',
+  FOOTBALL_GOAL: 'football:goal',
+  FOOTBALL_START: 'football:start',
+  FOOTBALL_END_HALF: 'football:end-half',
+  FOOTBALL_UNDO: 'football:undo',
+  FOOTBALL_TIMER: 'football:timer',
+  BASKETBALL_BASKET: 'basketball:basket',
+  BASKETBALL_UNDO: 'basketball:undo',
+  BASKETBALL_START: 'basketball:start',
+  BASKETBALL_END_QUARTER: 'basketball:end-quarter',
+  BASKETBALL_TIMER: 'basketball:timer',
+  TOUCH_RUGBY_TRY: 'touch-rugby:try',
+  TOUCH_RUGBY_UNDO: 'touch-rugby:undo',
+  TOUCH_RUGBY_START: 'touch-rugby:start',
+  TOUCH_RUGBY_END_HALF: 'touch-rugby:end-half',
+  TOUCH_RUGBY_TIMER: 'touch-rugby:timer',
   SCOREBOARD_UPDATE: 'scoreboard:update',
+  VENUE_LIVE: 'venue:live',
 } as const;
 
 export type SocketEvent = (typeof SOCKET_EVENTS)[keyof typeof SOCKET_EVENTS];
