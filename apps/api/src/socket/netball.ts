@@ -10,6 +10,7 @@ import {
 import type { NetballMatchState } from '@sportsync/shared';
 import { MatchStateModel } from '../models/match-state.js';
 import { completeFixtureFromMatchState } from '../services/match-completion.js';
+import { rejectUnauthorizedScore } from '../middleware/socket-auth.js';
 
 async function persistNetball(
   io: Server,
@@ -31,6 +32,7 @@ async function persistNetball(
 export function registerNetballHandlers(io: Server) {
   io.on('connection', (socket) => {
     socket.on(SOCKET_EVENTS.NETBALL_START, async (matchId: string) => {
+      if (rejectUnauthorizedScore(socket)) return;
       const doc = await MatchStateModel.findOne({ matchId });
       if (!doc || doc.sport !== 'indoor-netball') return;
       const state = startNetballMatch(doc.state as NetballMatchState);
@@ -40,6 +42,7 @@ export function registerNetballHandlers(io: Server) {
     socket.on(
       SOCKET_EVENTS.NETBALL_GOAL,
       async (payload: { matchId: string; teamId: string; scorerId: string; assistedById?: string }) => {
+        if (rejectUnauthorizedScore(socket)) return;
         const doc = await MatchStateModel.findOne({ matchId: payload.matchId });
         if (!doc || doc.sport !== 'indoor-netball') return;
         const state = recordGoal(
@@ -53,6 +56,7 @@ export function registerNetballHandlers(io: Server) {
     );
 
     socket.on(SOCKET_EVENTS.NETBALL_END_QUARTER, async (matchId: string) => {
+      if (rejectUnauthorizedScore(socket)) return;
       const doc = await MatchStateModel.findOne({ matchId });
       if (!doc || doc.sport !== 'indoor-netball') return;
       const state = endQuarter(doc.state as NetballMatchState);
@@ -60,6 +64,7 @@ export function registerNetballHandlers(io: Server) {
     });
 
     socket.on(SOCKET_EVENTS.NETBALL_UNDO, async (matchId: string) => {
+      if (rejectUnauthorizedScore(socket)) return;
       const doc = await MatchStateModel.findOne({ matchId });
       if (!doc || doc.sport !== 'indoor-netball') return;
       const state = undoLastGoal(doc.state as NetballMatchState);
@@ -69,6 +74,7 @@ export function registerNetballHandlers(io: Server) {
     socket.on(
       SOCKET_EVENTS.NETBALL_TIMER,
       async (payload: { matchId: string; timerSeconds: number; timerRunning: boolean }) => {
+        if (rejectUnauthorizedScore(socket)) return;
         const doc = await MatchStateModel.findOne({ matchId: payload.matchId });
         if (!doc || doc.sport !== 'indoor-netball') return;
         const state = structuredClone(doc.state) as NetballMatchState;

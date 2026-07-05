@@ -113,6 +113,9 @@ npm run dev:scoreboard  # Terminal 5 — http://localhost:5176 (TV display)
 - **Automated SMS reminders** — configurable hours before fixture, player phone numbers
 - **Stripe checkout for extra scoreboard licences** — purchase add-ons from dashboard
 - **Indoor football** — 5-a-side scoring, scorer UI, TV scoreboard display
+- **Basketball** — 4-quarter scoring with 2pt/3pt baskets, scorer and scoreboard UI
+- **Auth hardening** — JWT required on write routes with venue scoping; socket scoring auth
+- **Scoreboard Electron app** — native desktop wrapper for TV hardware
 - **Scoreboard PWA kiosk mode** — installable app with fullscreen display
 - **Marketing website** — landing page, pricing, venue login CTA
 - **Branded venue host login** — competition management portal
@@ -153,8 +156,10 @@ Set `STRIPE_SCOREBOARD_PRICE_ID` for Stripe checkout when purchasing extra score
 
 ## Roadmap
 
-- [ ] Additional sports modules (basketball)
-- [ ] Native scoreboard installer (Electron)
+- [ ] Native scoreboard installer polish (auto-start, OS packaging CI)
+- [x] Additional sports modules (basketball)
+- [x] Native scoreboard installer (Electron)
+- [x] Auth hardening on write routes
 - [x] Automated scheduled SMS before fixtures
 - [x] Stripe checkout for extra scoreboard licences
 - [x] Indoor football sport module

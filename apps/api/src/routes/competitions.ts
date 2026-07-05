@@ -6,8 +6,12 @@ import { CourtModel } from '../models/court.js';
 import { buildLadderFromFixtures } from '../services/ladder.js';
 import { checkCanAddCompetition, checkCanUseSport } from '../services/subscription.js';
 import { newId } from '../utils/id.js';
+import { authMiddleware, requireRole, type AuthRequest } from '../middleware/auth.js';
+import { requireCompetitionAccess, requireUserVenue } from '../middleware/venue-scope.js';
 
 export const competitionsRouter = Router();
+
+const manageRoles = [authMiddleware, requireRole('owner', 'admin', 'competition-manager')];
 
 competitionsRouter.get('/venue/:venueId', async (req, res) => {
   const competitions = await CompetitionModel.find({ venueId: req.params.venueId }).sort({
@@ -25,12 +29,13 @@ competitionsRouter.get('/:competitionId', async (req, res) => {
   res.json(competition);
 });
 
-competitionsRouter.post('/', async (req, res) => {
+competitionsRouter.post('/', ...manageRoles, async (req: AuthRequest, res) => {
   const { venueId, name, season, sport, teamIds, settings, status } = req.body;
   if (!venueId || !name) {
     res.status(400).json({ error: 'venueId and name are required' });
     return;
   }
+  if (!requireUserVenue(req, res, venueId)) return;
 
   const sportId = sport || 'indoor-cricket';
   const compCheck = await checkCanAddCompetition(venueId);
@@ -59,7 +64,8 @@ competitionsRouter.post('/', async (req, res) => {
   res.status(201).json(competition);
 });
 
-competitionsRouter.patch('/:competitionId', async (req, res) => {
+competitionsRouter.patch('/:competitionId', ...manageRoles, async (req: AuthRequest, res) => {
+  if (!(await requireCompetitionAccess(req, res, String(req.params.competitionId)))) return;
   const competition = await CompetitionModel.findOneAndUpdate(
     { id: req.params.competitionId },
     { $set: req.body },
@@ -72,7 +78,8 @@ competitionsRouter.patch('/:competitionId', async (req, res) => {
   res.json(competition);
 });
 
-competitionsRouter.post('/:competitionId/teams', async (req, res) => {
+competitionsRouter.post('/:competitionId/teams', ...manageRoles, async (req: AuthRequest, res) => {
+  if (!(await requireCompetitionAccess(req, res, String(req.params.competitionId)))) return;
   const { teamIds } = req.body;
   const competition = await CompetitionModel.findOneAndUpdate(
     { id: req.params.competitionId },
@@ -86,7 +93,8 @@ competitionsRouter.post('/:competitionId/teams', async (req, res) => {
   res.json(competition);
 });
 
-competitionsRouter.post('/:competitionId/generate-fixtures', async (req, res) => {
+competitionsRouter.post('/:competitionId/generate-fixtures', ...manageRoles, async (req: AuthRequest, res) => {
+  if (!(await requireCompetitionAccess(req, res, String(req.params.competitionId)))) return;
   const competition = await CompetitionModel.findOne({ id: req.params.competitionId });
   if (!competition) {
     res.status(404).json({ error: 'Competition not found' });

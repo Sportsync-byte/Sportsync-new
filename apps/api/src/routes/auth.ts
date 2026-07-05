@@ -44,6 +44,10 @@ authRouter.get('/me', authMiddleware, (req: AuthRequest, res) => {
 });
 
 authRouter.post('/register', async (req, res) => {
+  if (process.env.ALLOW_PUBLIC_REGISTER !== 'true') {
+    res.status(403).json({ error: 'Public registration is disabled' });
+    return;
+  }
   const { email, password, name, venueId, role } = req.body;
   if (!email || !password || !name || !venueId) {
     res.status(400).json({ error: 'Missing required fields' });

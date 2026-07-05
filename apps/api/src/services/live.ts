@@ -3,8 +3,8 @@ import { FixtureModel } from '../models/fixture.js';
 import { TeamModel } from '../models/team.js';
 import { CompetitionModel } from '../models/competition.js';
 import { CourtModel } from '../models/court.js';
-import { getScoreboardDisplay, getNetballScoreboard, getFootballScoreboard } from '@sportsync/sport-rules';
-import type { IndoorCricketMatchState, NetballMatchState, LiveMatchSummary, SportId, IndoorFootballMatchState } from '@sportsync/shared';
+import { getScoreboardDisplay, getNetballScoreboard, getFootballScoreboard, getBasketballScoreboard } from '@sportsync/sport-rules';
+import type { IndoorCricketMatchState, NetballMatchState, LiveMatchSummary, SportId, IndoorFootballMatchState, BasketballMatchState } from '@sportsync/shared';
 
 function isLiveMatchStatus(sport: string, status: string): boolean {
   if (status === 'completed') return false;
@@ -13,6 +13,9 @@ function isLiveMatchStatus(sport: string, status: string): boolean {
   }
   if (sport === 'indoor-football') {
     return ['live', 'half-time', 'not-started'].includes(status);
+  }
+  if (sport === 'basketball') {
+    return ['live', 'quarter-break', 'not-started'].includes(status);
   }
   return ['innings-1', 'innings-2', 'not-started'].includes(status);
 }
@@ -38,7 +41,7 @@ export async function searchLiveMatches(query: {
     if (query.competitionId && fixture.competitionId !== query.competitionId) continue;
     if (query.courtId && fixture.courtId !== query.courtId) continue;
 
-    const state = doc.state as IndoorCricketMatchState | NetballMatchState | IndoorFootballMatchState;
+    const state = doc.state as IndoorCricketMatchState | NetballMatchState | IndoorFootballMatchState | BasketballMatchState;
     if (query.liveOnly && !isLiveMatchStatus(sport, state.status)) continue;
 
     const [homeTeam, awayTeam, competition, court] = await Promise.all([
@@ -99,6 +102,30 @@ export async function searchLiveMatches(query: {
         awayScore: footballState.awayScore,
         status: footballState.status,
         quarter: display.half,
+      });
+      continue;
+    }
+
+    if (sport === 'basketball') {
+      const basketballState = state as BasketballMatchState;
+      const display = getBasketballScoreboard(basketballState);
+      summaries.push({
+        matchId: doc.matchId,
+        fixtureId: doc.fixtureId,
+        venueId: doc.venueId,
+        competitionId: fixture.competitionId,
+        sport,
+        competitionName: competition?.name,
+        courtId: fixture.courtId ?? undefined,
+        courtName: court?.name,
+        homeTeamId: fixture.homeTeamId,
+        homeTeamName: homeTeam?.name,
+        awayTeamId: fixture.awayTeamId,
+        awayTeamName: awayTeam?.name,
+        homeScore: basketballState.homeScore,
+        awayScore: basketballState.awayScore,
+        status: basketballState.status,
+        quarter: display.quarter,
       });
       continue;
     }

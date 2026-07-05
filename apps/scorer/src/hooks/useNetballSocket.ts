@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
-import { io, Socket } from 'socket.io-client';
+import { Socket } from 'socket.io-client';
 import { SOCKET_EVENTS } from '@sportsync/shared';
 import type { NetballMatchState } from '@sportsync/shared';
+import { createMatchSocket } from '../lib/socket';
 
 export function useNetballSocket(matchId: string | null) {
   const [connected, setConnected] = useState(false);
@@ -11,7 +12,7 @@ export function useNetballSocket(matchId: string | null) {
   useEffect(() => {
     if (!matchId) return;
 
-    const s = io('/', { transports: ['websocket', 'polling'] });
+    const s = createMatchSocket();
     socketRef.current = s;
 
     s.on('connect', () => {

@@ -19,7 +19,7 @@ export function CompetitionDetailPage() {
   const teamMap = Object.fromEntries(teams.map((t) => [t.id, t.name]));
   const courtMap = Object.fromEntries(courts.map((c) => [c.id, c.name]));
   const playerMap = Object.fromEntries(players.map((p) => [p.id, p.displayName]));
-  const isGoalSport = competition?.sport === 'indoor-netball' || competition?.sport === 'indoor-football';
+  const isGoalSport = competition?.sport === 'indoor-netball' || competition?.sport === 'indoor-football' || competition?.sport === 'basketball';
 
   const load = async () => {
     if (!competitionId) return;
@@ -51,10 +51,17 @@ export function CompetitionDetailPage() {
     load();
   };
 
+  const scorerUrl = (matchId?: string) => {
+    const token = localStorage.getItem('sportsync-token');
+    const base = matchId ? `${SCORER_URL}/match/${matchId}` : SCORER_URL;
+    return token ? `${base}?token=${encodeURIComponent(token)}` : base;
+  };
+
   const startMatch = async (fixtureId: string) => {
-    await api.fixtures.start(fixtureId);
+    const result = await api.fixtures.start(fixtureId);
     load();
-    window.open(SCORER_URL, '_blank');
+    const matchId = (result as { match?: { matchId?: string } }).match?.matchId;
+    window.open(scorerUrl(matchId), '_blank');
   };
 
   const updateFixture = async (fixtureId: string, data: { courtId?: string; scheduledAt?: string }) => {
@@ -172,7 +179,7 @@ export function CompetitionDetailPage() {
                   </>
                 )}
                 {f.status === 'live' && (
-                  <a href={`${SCORER_URL}?match=${f.matchId}`} target="_blank" rel="noreferrer">
+                  <a href={scorerUrl(f.matchId)} target="_blank" rel="noreferrer">
                     <button>Score</button>
                   </a>
                 )}

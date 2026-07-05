@@ -45,7 +45,7 @@ async function seed() {
     productTier: 'stadium',
     branding: { primaryColor: '#00c896', secondaryColor: '#1a2332' },
     courtCount: 4,
-    sports: ['indoor-cricket', 'indoor-netball', 'indoor-football'],
+    sports: ['indoor-cricket', 'indoor-netball', 'indoor-football', 'basketball'],
     licenseKey,
     smsEnabled: true,
     smsAutoRemindersEnabled: true,
@@ -223,6 +223,45 @@ async function seed() {
     }))
   );
   console.log(`Football Competition ID: ${footballCompId}`);
+
+  const basketballTeams = teams.slice(2, 6);
+  const basketballCompId = newId();
+  await CompetitionModel.create({
+    id: basketballCompId,
+    venueId,
+    sport: 'basketball',
+    name: 'Autumn Basketball League 2026',
+    season: '2026',
+    status: 'active',
+    teamIds: basketballTeams.map((t) => t.id),
+    settings: {
+      pointsForWin: 2,
+      pointsForTie: 1,
+      pointsForLoss: 0,
+      doubleRoundRobin: false,
+    },
+    ladder: [],
+  });
+
+  const basketballFixtures = generateRoundRobinFixtures(
+    basketballTeams.map((t) => t.id),
+    basketballCompId,
+    'default',
+    {
+      startDate: new Date().toISOString(),
+      daysBetweenRounds: 7,
+      courtIds: courts.map((c) => c.id),
+      slotMinutes: 50,
+    }
+  );
+  await FixtureModel.insertMany(
+    basketballFixtures.map((f) => ({
+      ...f,
+      id: newId(),
+      venueId,
+    }))
+  );
+  console.log(`Basketball Competition ID: ${basketballCompId}`);
 
   console.log(`Teams: ${teams.length}, Players: ${players.length}, Fixtures: ${generated.length}`);
 

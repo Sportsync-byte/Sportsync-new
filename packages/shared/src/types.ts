@@ -267,6 +267,11 @@ export const SOCKET_EVENTS = {
   FOOTBALL_START: 'football:start',
   FOOTBALL_END_HALF: 'football:end-half',
   FOOTBALL_TIMER: 'football:timer',
+  BASKETBALL_BASKET: 'basketball:basket',
+  BASKETBALL_UNDO: 'basketball:undo',
+  BASKETBALL_START: 'basketball:start',
+  BASKETBALL_END_QUARTER: 'basketball:end-quarter',
+  BASKETBALL_TIMER: 'basketball:timer',
   SCOREBOARD_UPDATE: 'scoreboard:update',
   VENUE_LIVE: 'venue:live',
 } as const;

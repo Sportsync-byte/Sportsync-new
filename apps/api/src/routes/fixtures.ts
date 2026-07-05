@@ -1,13 +1,18 @@
 import { Router } from 'express';
-import { INDOOR_CRICKET_FORMATS, createNetballMatch, INDOOR_NETBALL_FORMAT, createFootballMatch, INDOOR_FOOTBALL_FORMAT } from '@sportsync/shared';
+import { INDOOR_CRICKET_FORMATS, createNetballMatch, INDOOR_NETBALL_FORMAT, createFootballMatch, INDOOR_FOOTBALL_FORMAT, createBasketballMatch, BASKETBALL_FORMAT } from '@sportsync/shared';
 import { createMatch } from '@sportsync/sport-rules';
 import { CompetitionModel } from '../models/competition.js';
 import { FixtureModel } from '../models/fixture.js';
 import { MatchStateModel } from '../models/match-state.js';
 import { checkCourtConflict } from '../services/live.js';
 import { newId } from '../utils/id.js';
+import { authMiddleware, requireRole, type AuthRequest } from '../middleware/auth.js';
+import { requireFixtureAccess } from '../middleware/venue-scope.js';
 
 export const fixturesRouter = Router();
+
+const manageRoles = [authMiddleware, requireRole('owner', 'admin', 'competition-manager')];
+const scoreRoles = [authMiddleware, requireRole('owner', 'admin', 'competition-manager', 'scorer')];
 
 fixturesRouter.get('/venue/:venueId', async (req, res) => {
   const filter: Record<string, unknown> = { venueId: req.params.venueId };
@@ -27,7 +32,8 @@ fixturesRouter.get('/:fixtureId', async (req, res) => {
   res.json(fixture);
 });
 
-fixturesRouter.patch('/:fixtureId', async (req, res) => {
+fixturesRouter.patch('/:fixtureId', ...manageRoles, async (req: AuthRequest, res) => {
+  if (!(await requireFixtureAccess(req, res, String(req.params.fixtureId)))) return;
   const existing = await FixtureModel.findOne({ id: req.params.fixtureId });
   if (!existing) {
     res.status(404).json({ error: 'Fixture not found' });
@@ -58,7 +64,8 @@ fixturesRouter.patch('/:fixtureId', async (req, res) => {
   res.json(fixture);
 });
 
-fixturesRouter.post('/:fixtureId/start', async (req, res) => {
+fixturesRouter.post('/:fixtureId/start', ...scoreRoles, async (req: AuthRequest, res) => {
+  if (!(await requireFixtureAccess(req, res, String(req.params.fixtureId)))) return;
   const fixture = await FixtureModel.findOne({ id: req.params.fixtureId });
   if (!fixture) {
     res.status(404).json({ error: 'Fixture not found' });
@@ -85,6 +92,8 @@ fixturesRouter.post('/:fixtureId/start', async (req, res) => {
     state = createNetballMatch(matchId, fixture.id, fixture.homeTeamId, fixture.awayTeamId, INDOOR_NETBALL_FORMAT);
   } else if (sport === 'indoor-football') {
     state = createFootballMatch(matchId, fixture.id, fixture.homeTeamId, fixture.awayTeamId, INDOOR_FOOTBALL_FORMAT);
+  } else if (sport === 'basketball') {
+    state = createBasketballMatch(matchId, fixture.id, fixture.homeTeamId, fixture.awayTeamId, BASKETBALL_FORMAT);
   } else {
     sport = 'indoor-cricket';
     const formatKey = competition.settings.formatKey || 'six-aside';

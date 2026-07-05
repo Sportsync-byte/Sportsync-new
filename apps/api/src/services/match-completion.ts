@@ -1,4 +1,4 @@
-import type { IndoorCricketMatchState, NetballMatchState, IndoorFootballMatchState } from '@sportsync/shared';
+import type { IndoorCricketMatchState, NetballMatchState, IndoorFootballMatchState, BasketballMatchState } from '@sportsync/shared';
 import { getMatchResult } from '@sportsync/sport-rules';
 import { FixtureModel } from '../models/fixture.js';
 import { CompetitionModel } from '../models/competition.js';
@@ -67,6 +67,24 @@ export async function completeFixtureFromMatchState(
       const ladder = buildLadderFromFixtures(competition, fixtures);
       await CompetitionModel.updateOne({ id: competition.id }, { ladder });
       await persistNetballStats(footballState as unknown as NetballMatchState, fixture.venueId, fixture.competitionId);
+    }
+    return fixture;
+  }
+
+  if (sport === 'basketball') {
+    const basketballState = state as BasketballMatchState;
+    fixture.status = 'completed';
+    fixture.homeScore = basketballState.homeScore;
+    fixture.awayScore = basketballState.awayScore;
+    fixture.winnerTeamId = basketballState.winnerTeamId;
+    await fixture.save();
+
+    const competition = await CompetitionModel.findOne({ id: fixture.competitionId });
+    if (competition) {
+      const fixtures = await FixtureModel.find({ competitionId: competition.id });
+      const ladder = buildLadderFromFixtures(competition, fixtures);
+      await CompetitionModel.updateOne({ id: competition.id }, { ladder });
+      await persistNetballStats(basketballState as unknown as NetballMatchState, fixture.venueId, fixture.competitionId);
     }
     return fixture;
   }
