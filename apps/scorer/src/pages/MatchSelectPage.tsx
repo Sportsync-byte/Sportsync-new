@@ -61,12 +61,12 @@ export function MatchSelectPage() {
     <div style={{ padding: '1.5rem', maxWidth: 600, margin: '0 auto' }}>
       <h1 style={{ fontSize: '1.5rem', marginBottom: '0.5rem' }}>SportSync Scorer</h1>
       <p style={{ color: 'var(--text-muted)', marginBottom: '1.5rem' }}>
-        Select a match to score. Works offline — syncs when connection returns.
+        Start and score live matches here. Select a fixture below — scheduled matches start scoring; live matches resume where you left off.
       </p>
 
       {fixtures.length === 0 ? (
         <div style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-muted)', background: 'var(--surface)', borderRadius: 12 }}>
-          No matches available. Create fixtures in the dashboard first.
+          No matches available. Create fixtures in the competition management dashboard first.
         </div>
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
@@ -84,7 +84,7 @@ export function MatchSelectPage() {
               }}
             >
               <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
-                Round {f.round} · {f.status} · {competitions[f.competitionId]?.sport || 'sport'}
+                Round {f.round} · {f.status === 'scheduled' ? 'Tap to start' : 'Tap to score'} · {competitions[f.competitionId]?.sport || 'sport'}
               </div>
               <div style={{ fontWeight: 700, fontSize: '1.1rem', marginTop: '0.25rem' }}>
                 {teamMap[f.homeTeamId] || 'Home'} vs {teamMap[f.awayTeamId] || 'Away'}

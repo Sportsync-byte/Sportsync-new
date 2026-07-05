@@ -4,8 +4,6 @@ import { api, type PlayerStats } from '@sportsync/api-client';
 import type { Competition, Fixture, Team, LadderEntry, Player, Court } from '@sportsync/shared';
 import { isGoalSport, goalStatLabel } from '@sportsync/shared';
 
-const SCORER_URL = import.meta.env.VITE_SCORER_URL || 'http://localhost:5174';
-
 export function CompetitionDetailPage() {
   const { competitionId } = useParams<{ competitionId: string }>();
   const [competition, setCompetition] = useState<Competition | null>(null);
@@ -51,19 +49,6 @@ export function CompetitionDetailPage() {
     if (!competitionId) return;
     await api.competitions.generateFixtures(competitionId);
     load();
-  };
-
-  const scorerUrl = (matchId?: string) => {
-    const token = localStorage.getItem('sportsync-token');
-    const base = matchId ? `${SCORER_URL}/match/${matchId}` : SCORER_URL;
-    return token ? `${base}?token=${encodeURIComponent(token)}` : base;
-  };
-
-  const startMatch = async (fixtureId: string) => {
-    const result = await api.fixtures.start(fixtureId);
-    load();
-    const matchId = (result as { match?: { matchId?: string } }).match?.matchId;
-    window.open(scorerUrl(matchId), '_blank');
   };
 
   const updateFixture = async (fixtureId: string, data: { courtId?: string; scheduledAt?: string }) => {
@@ -139,6 +124,9 @@ export function CompetitionDetailPage() {
 
       {tab === 'fixtures' && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+          <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', margin: '0 0 0.5rem' }}>
+            Schedule and manage fixtures here. Start and score matches in the SportSync Scorer app.
+          </p>
           {fixtures.map((f) => (
             <div key={f.id} className="card" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <div>
@@ -182,15 +170,7 @@ export function CompetitionDetailPage() {
                   <button onClick={() => downloadFile(api.export.scorecardPdf(f.matchId!), 'scorecard.pdf')}>PDF</button>
                 )}
                 {f.status === 'scheduled' && (
-                  <>
-                    <button onClick={() => sendSmsReminder(f.id)} title="Send SMS reminder">SMS</button>
-                    <button className="primary" onClick={() => startMatch(f.id)}>Start</button>
-                  </>
-                )}
-                {f.status === 'live' && (
-                  <a href={scorerUrl(f.matchId)} target="_blank" rel="noreferrer">
-                    <button>Score</button>
-                  </a>
+                  <button onClick={() => sendSmsReminder(f.id)} title="Send SMS reminder">SMS</button>
                 )}
               </div>
             </div>

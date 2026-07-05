@@ -1,8 +1,6 @@
 import type { LiveMatchSummary, SportId } from '@sportsync/shared';
 import { isGoalSport, scoringEngineSport } from '@sportsync/shared';
 
-const SCORER_URL = import.meta.env.VITE_SCORER_URL || 'http://localhost:5174';
-
 export function formatLiveScore(m: LiveMatchSummary): { home: string; away: string } {
   if (isGoalSport(m.sport)) {
     return { home: String(m.homeScore), away: String(m.awayScore) };
@@ -60,16 +58,6 @@ export function LiveScoreCard({ match: m, compact }: LiveScoreCardProps) {
           <div style={{ fontSize: compact ? '1.35rem' : '1.75rem', fontWeight: 800 }}>{scores.away}</div>
         </div>
       </div>
-      {!compact && (
-        <a
-          href={`${SCORER_URL}/display/${m.matchId}`}
-          target="_blank"
-          rel="noreferrer"
-          style={{ display: 'block', marginTop: '0.75rem', fontSize: '0.85rem' }}
-        >
-          Open scoreboard display →
-        </a>
-      )}
     </div>
   );
 }

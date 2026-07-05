@@ -42,12 +42,13 @@ export function LoginPage() {
           Venue host portal
         </h1>
         <p style={{ color: 'var(--text-muted)', fontSize: '1.05rem', maxWidth: 400, lineHeight: 1.6 }}>
-          Manage competitions, teams, fixtures, scoreboards, and live scoring for your indoor sports venue.
+          Manage competitions, teams, fixtures, ladders, and venue settings for your sports venue.
         </p>
         <ul style={{ marginTop: '2rem', color: 'var(--text-muted)', fontSize: '0.9rem', paddingLeft: '1.25rem', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
           <li>Generate fixtures & track ladders</li>
           <li>Activate licensed TV scoreboards</li>
           <li>Send SMS fixture reminders (Stadium)</li>
+          <li>Monitor live scores across courts</li>
         </ul>
       </div>
 
