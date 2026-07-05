@@ -1,0 +1,21 @@
+{
+  "name": "sportsync",
+  "version": "0.1.0",
+  "private": true,
+  "description": "All-in-one sports competition management and live scoring platform",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "npm run dev --workspaces --if-present",
+    "dev:api": "npm run dev -w @sportsync/api",
+    "dev:dashboard": "npm run dev -w @sportsync/dashboard",
+    "dev:scorer": "npm run dev -w @sportsync/scorer",
+    "build": "npm run build --workspaces --if-present",
+    "typecheck": "npm run typecheck --workspaces --if-present"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

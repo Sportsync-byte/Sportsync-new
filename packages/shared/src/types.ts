@@ -1,0 +1,138 @@
+export type SportId =
+  | 'indoor-cricket'
+  | 'outdoor-cricket'
+  | 'indoor-football'
+  | 'outdoor-football'
+  | 'indoor-netball'
+  | 'outdoor-netball'
+  | 'basketball'
+  | 'touch-rugby'
+  | 'rugby-union'
+  | 'rugby-league';
+
+export type ProductTier = 'club' | 'stadium';
+
+export type AdminRole =
+  | 'owner'
+  | 'admin'
+  | 'competition-manager'
+  | 'scorer'
+  | 'viewer';
+
+export interface Venue {
+  id: string;
+  name: string;
+  slug: string;
+  productTier: ProductTier;
+  branding: VenueBranding;
+  courtCount: number;
+  sports: SportId[];
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface VenueBranding {
+  primaryColor: string;
+  secondaryColor: string;
+  logoUrl?: string;
+  sponsorBannerUrl?: string;
+  scoreboardTheme?: string;
+}
+
+export interface Court {
+  id: string;
+  venueId: string;
+  name: string;
+  sport?: SportId;
+  displayOrder: number;
+}
+
+export interface Team {
+  id: string;
+  venueId: string;
+  name: string;
+  shortName?: string;
+  colors: {
+    primary: string;
+    secondary: string;
+  };
+  logoUrl?: string;
+  captainId?: string;
+  coachId?: string;
+}
+
+export interface Player {
+  id: string;
+  venueId: string;
+  firstName: string;
+  lastName: string;
+  displayName: string;
+  teamIds: string[];
+}
+
+export interface Competition {
+  id: string;
+  venueId: string;
+  sport: SportId;
+  name: string;
+  season: string;
+  status: 'draft' | 'active' | 'completed';
+  divisions: Division[];
+}
+
+export interface Division {
+  id: string;
+  name: string;
+  grades: Grade[];
+}
+
+export interface Grade {
+  id: string;
+  name: string;
+  poolIds: string[];
+  roundIds: string[];
+}
+
+export interface Fixture {
+  id: string;
+  competitionId: string;
+  gradeId: string;
+  round: number;
+  courtId?: string;
+  homeTeamId: string;
+  awayTeamId: string;
+  scheduledAt?: string;
+  status: 'scheduled' | 'live' | 'completed' | 'abandoned';
+  matchId?: string;
+}
+
+export interface LadderEntry {
+  teamId: string;
+  played: number;
+  won: number;
+  lost: number;
+  tied: number;
+  points: number;
+  bonusPoints: number;
+  netRunRate?: number;
+  position: number;
+}
+
+export interface LiveScoreSearchFilters {
+  venueSlug?: string;
+  competitionId?: string;
+  courtId?: string;
+  teamName?: string;
+}
+
+export const SOCKET_EVENTS = {
+  MATCH_JOIN: 'match:join',
+  MATCH_LEAVE: 'match:leave',
+  MATCH_STATE: 'match:state',
+  MATCH_BALL: 'match:ball',
+  MATCH_UNDO: 'match:undo',
+  MATCH_TIMER: 'match:timer',
+  SCOREBOARD_UPDATE: 'scoreboard:update',
+} as const;
+
+export type SocketEvent = (typeof SOCKET_EVENTS)[keyof typeof SOCKET_EVENTS];
