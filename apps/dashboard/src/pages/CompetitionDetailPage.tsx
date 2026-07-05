@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { api, type PlayerStats } from '@sportsync/api-client';
 import type { Competition, Fixture, Team, LadderEntry, Player, Court } from '@sportsync/shared';
+import { isGoalSport, goalStatLabel } from '@sportsync/shared';
 
 const SCORER_URL = import.meta.env.VITE_SCORER_URL || 'http://localhost:5174';
 
@@ -19,8 +20,8 @@ export function CompetitionDetailPage() {
   const teamMap = Object.fromEntries(teams.map((t) => [t.id, t.name]));
   const courtMap = Object.fromEntries(courts.map((c) => [c.id, c.name]));
   const playerMap = Object.fromEntries(players.map((p) => [p.id, p.displayName]));
-  const isGoalSport = competition?.sport === 'indoor-netball' || competition?.sport === 'indoor-football' || competition?.sport === 'basketball' || competition?.sport === 'touch-rugby';
-  const goalStatLabel = competition?.sport === 'basketball' ? 'Points' : competition?.sport === 'touch-rugby' ? 'Tries' : 'Goals';
+  const isGoal = isGoalSport(competition?.sport ?? '');
+  const goalStatLabelText = goalStatLabel(competition?.sport ?? '');
 
   const load = async () => {
     if (!competitionId) return;
@@ -169,7 +170,7 @@ export function CompetitionDetailPage() {
                 )}
                 {f.status === 'completed' && (
                   <div style={{ fontSize: '0.85rem', marginTop: '0.25rem' }}>
-                    {isGoalSport
+                    {isGoal
                       ? `${f.homeScore} – ${f.awayScore}`
                       : `${f.homeScore}/${f.homeWickets} – ${f.awayScore}/${f.awayWickets}`}
                   </div>
@@ -233,9 +234,9 @@ export function CompetitionDetailPage() {
               <tr style={{ borderBottom: '1px solid var(--border)' }}>
                 <th style={thStyle}>Player</th>
                 <th style={thStyle}>M</th>
-                {isGoalSport ? (
+                {isGoal ? (
                   <>
-                    <th style={thStyle}>{goalStatLabel}</th>
+                    <th style={thStyle}>{goalStatLabelText}</th>
                     <th style={thStyle}>Assists</th>
                   </>
                 ) : (
@@ -250,14 +251,14 @@ export function CompetitionDetailPage() {
               </tr>
             </thead>
             <tbody>
-              {(isGoalSport
+              {(isGoal
                 ? [...stats].sort((a, b) => b.goals - a.goals)
                 : [...stats].sort((a, b) => b.runs - a.runs)
               ).map((s) => (
                 <tr key={s.playerId} style={{ borderBottom: '1px solid var(--border)' }}>
                   <td style={tdStyle}>{playerMap[s.playerId] || s.playerId}</td>
                   <td style={tdStyle}>{s.matchesPlayed}</td>
-                  {isGoalSport ? (
+                  {isGoal ? (
                     <>
                       <td style={tdStyle}>{s.goals}</td>
                       <td style={tdStyle}>{s.assists}</td>

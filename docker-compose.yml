@@ -1,0 +1,28 @@
+services:
+  mongo:
+    image: mongo:7
+    restart: unless-stopped
+    volumes:
+      - sportsync-mongo:/data/db
+    ports:
+      - "27017:27017"
+
+  api:
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile
+    restart: unless-stopped
+    ports:
+      - "3001:3001"
+    environment:
+      PORT: 3001
+      MONGODB_URI: mongodb://mongo:27017/sportsync
+      CORS_ORIGIN: http://localhost:5173,http://localhost:5174,http://localhost:5175,http://localhost:5176
+      JWT_SECRET: ${JWT_SECRET:-change-this-in-production}
+      SOCKET_AUTH_OPTIONAL: ${SOCKET_AUTH_OPTIONAL:-true}
+      ALLOW_PUBLIC_REGISTER: ${ALLOW_PUBLIC_REGISTER:-true}
+    depends_on:
+      - mongo
+
+volumes:
+  sportsync-mongo:

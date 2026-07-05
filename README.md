@@ -24,14 +24,27 @@ All-in-one sports competition management and live scoring platform.
 ```
 sportsync/
 ├── apps/
-│   ├── api/              # REST API + Socket.IO + MongoDB
-│   ├── dashboard/        # Admin portal (competitions, teams, players, live scores)
-│   └── scorer/           # Live scoring + TV scoreboard display
+│   ├── api/                 # REST API + Socket.IO + MongoDB
+│   ├── dashboard/           # Venue admin portal
+│   ├── scorer/              # Tablet live scoring
+│   ├── scoreboard/          # TV display (PWA + licence activation)
+│   ├── scoreboard-electron/ # Native desktop wrapper for venue TVs
+│   └── website/             # Marketing site
 └── packages/
-    ├── shared/           # Domain types, fixture generator, ladder calculator
-    ├── sport-rules/      # Indoor cricket scoring engine
-    └── api-client/       # Shared fetch client for frontends
+    ├── shared/              # Domain types, fixtures, ladder, sport helpers
+    ├── sport-rules/         # Scoring engines per sport
+    └── api-client/          # Shared fetch client for frontends
 ```
+
+### Sports supported
+
+| Sport | Scoring | Stats |
+|-------|---------|-------|
+| Indoor cricket | Runs, wickets, overs | Runs, wickets, catches |
+| Indoor netball | Goals per quarter | Goals, assists |
+| Indoor football | Goals per half | Goals, assists |
+| Basketball | 2pt/3pt baskets per quarter | Points, assists |
+| Touch rugby | Tries per half | Tries, assists |
 
 ## End-to-end flow
 
@@ -114,6 +127,9 @@ npm run dev:scoreboard  # Terminal 5 — http://localhost:5176 (TV display)
 - **Stripe checkout for extra scoreboard licences** — purchase add-ons from dashboard
 - **Indoor football** — 5-a-side scoring, scorer UI, TV scoreboard display
 - **Basketball** — 4-quarter scoring with 2pt/3pt baskets, scorer and scoreboard UI
+- **Touch rugby** — 6-a-side, 2 halves, try scoring with undo, scorer and scoreboard UI
+- **Electron auto-start** — login item on Windows/macOS; systemd unit for Linux TVs
+- **Docker Compose** — API + MongoDB for local/staging deploy
 - **Auth hardening** — JWT required on write routes with venue scoping; socket scoring auth
 - **Scoreboard Electron app** — native desktop wrapper for TV hardware
 - **Scoreboard PWA kiosk mode** — installable app with fullscreen display
@@ -154,16 +170,46 @@ Configure Twilio in `apps/api/.env`, enable SMS in Venue Settings, then:
 
 Set `STRIPE_SCOREBOARD_PRICE_ID` for Stripe checkout when purchasing extra scoreboard licences.
 
+## Docker (API + MongoDB)
+
+```bash
+cp apps/api/.env.example apps/api/.env   # optional — compose sets defaults
+docker compose up --build
+```
+
+API listens on http://localhost:3001. Run `npm run seed` against the container MongoDB to load demo data.
+
+## Production checklist
+
+Before going live, update `apps/api/.env`:
+
+| Variable | Production value |
+|----------|------------------|
+| `JWT_SECRET` | Long random secret |
+| `SOCKET_AUTH_OPTIONAL` | `false` |
+| `ALLOW_PUBLIC_REGISTER` | `false` |
+| `STRIPE_*` | Live Stripe keys and price IDs |
+| `TWILIO_*` | Twilio credentials for SMS |
+| `CORS_ORIGIN` | Your deployed dashboard/scorer/scoreboard URLs |
+
+Scorers must log in via the Scorer app so socket scoring events include a JWT.
+
 ## Roadmap
 
-- [ ] Electron auto-start on boot (systemd / Windows startup)
+- [x] Electron auto-start on boot (systemd / Windows startup)
+- [x] Touch rugby sport module
+- [x] Goal-sport stats for all team sports (netball, football, basketball, touch rugby)
+- [ ] Outdoor sport variants (cricket, football, netball)
+- [ ] Rugby union / rugby league modules
+- [ ] End-to-end integration tests
+- [ ] Hosted deploy templates (static frontends + API)
 - [x] Court management in dashboard
 - [x] Scorer login for production socket auth
 - [x] SMS roster send from fixtures
 - [x] Venue scoping on billing, notifications, scoreboards, export
 - [x] Native scoreboard installer polish (single-instance, kiosk defaults)
 - [x] Football undo in scorer
-- [x] Goal-sport stats refactor (netball, football, basketball)
+- [x] Goal-sport stats refactor (netball, football, basketball, touch rugby)
 - [x] SMS phone validation and player opt-out
 - [x] GitHub Actions CI pipeline
 - [x] Additional sports modules (basketball)

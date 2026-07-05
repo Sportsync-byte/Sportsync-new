@@ -17,7 +17,8 @@
     "dev:scoreboard-electron": "npm run start -w @sportsync/scoreboard-electron",
     "seed": "npm run seed -w @sportsync/api",
     "build": "npm run build --workspaces --if-present",
-    "typecheck": "npm run typecheck --workspaces --if-present"
+    "typecheck": "npm run typecheck --workspaces --if-present",
+    "test": "npm test -w @sportsync/shared && npm test -w @sportsync/sport-rules"
   },
   "engines": {
     "node": ">=20"
