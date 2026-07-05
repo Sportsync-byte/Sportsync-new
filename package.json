@@ -19,6 +19,8 @@
     "seed": "npm run seed -w @sportsync/api",
     "build": "npm run build:packages && npm run build -w @sportsync/api -w @sportsync/dashboard -w @sportsync/scorer -w @sportsync/scoreboard -w @sportsync/website",
     "build:packages": "npm run build -w @sportsync/shared && npm run build -w @sportsync/sport-rules && npm run build -w @sportsync/api-client",
+    "clean:packages": "node -e \"const fs=require('fs');const path=require('path');for (const p of ['packages/shared','packages/sport-rules','packages/api-client']) { for (const d of ['dist','tsconfig.tsbuildinfo']) { const t=path.join(p,d); if (fs.existsSync(t)) fs.rmSync(t,{recursive:true,force:true}); } }\"",
+    "rebuild:packages": "npm run clean:packages && npm run build:packages",
     "typecheck": "npm run build:packages && npm run typecheck --workspaces --if-present",
     "test": "npm test -w @sportsync/shared && npm test -w @sportsync/sport-rules"
   },

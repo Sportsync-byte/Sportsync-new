@@ -90,11 +90,18 @@ Running `npm run build -w @sportsync/shared` only prints `> tsc` — that is nor
 dir packages\shared\dist
 ```
 
-You should see `index.js` and `index.d.ts`. If `dist` is empty, delete stale cache and rebuild:
+If `dist` is empty or sport-rules reports missing exports from `@sportsync/shared`, wipe package build output and rebuild:
 
 ```powershell
-del packages\shared\tsconfig.tsbuildinfo
-npm run build -w @sportsync/shared
+npm run rebuild:packages
+```
+
+Or manually on Windows:
+
+```powershell
+Remove-Item -Recurse -Force packages\shared\dist, packages\sport-rules\dist, packages\api-client\dist -ErrorAction SilentlyContinue
+Remove-Item packages\shared\tsconfig.tsbuildinfo, packages\sport-rules\tsconfig.tsbuildinfo, packages\api-client\tsconfig.tsbuildinfo -ErrorAction SilentlyContinue
+npm run build:packages
 ```
 
 ### Run
