@@ -12,6 +12,8 @@
     }
   },
   "scripts": {
+    "prebuild": "npm run build -w @sportsync/shared",
+    "pretypecheck": "npm run build -w @sportsync/shared",
     "build": "tsc",
     "typecheck": "tsc --noEmit"
   },

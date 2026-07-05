@@ -8,6 +8,7 @@
     "packages/*"
   ],
   "scripts": {
+    "postinstall": "npm run build -w @sportsync/shared",
     "dev": "npm run dev --workspaces --if-present",
     "dev:api": "npm run dev -w @sportsync/api",
     "dev:dashboard": "npm run dev -w @sportsync/dashboard",
@@ -18,7 +19,7 @@
     "seed": "npm run seed -w @sportsync/api",
     "build": "npm run build:packages && npm run build -w @sportsync/api -w @sportsync/dashboard -w @sportsync/scorer -w @sportsync/scoreboard -w @sportsync/website",
     "build:packages": "npm run build -w @sportsync/shared && npm run build -w @sportsync/sport-rules && npm run build -w @sportsync/api-client",
-    "typecheck": "npm run typecheck --workspaces --if-present",
+    "typecheck": "npm run build:packages && npm run typecheck --workspaces --if-present",
     "test": "npm test -w @sportsync/shared && npm test -w @sportsync/sport-rules"
   },
   "engines": {

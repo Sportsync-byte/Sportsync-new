@@ -71,10 +71,24 @@ sportsync/
 ### Install & seed
 
 ```bash
-npm install
-npm run build:packages   # shared → sport-rules → api-client (required order)
+npm install            # auto-builds @sportsync/shared (required for TypeScript)
+npm run build:packages # shared → sport-rules → api-client (required before API build)
 cp apps/api/.env.example apps/api/.env
 npm run seed          # Creates demo venue, 6 teams, competition, fixtures
+```
+
+If you see `Cannot find module '@sportsync/shared'` in `packages/sport-rules`, shared was not built yet:
+
+```bash
+npm run build -w @sportsync/shared
+npm run build:packages
+```
+
+If `tsc` reports success but `dist/` is still empty, delete stale cache and rebuild:
+
+```bash
+rm packages/shared/tsconfig.tsbuildinfo
+npm run build -w @sportsync/shared
 ```
 
 ### Run

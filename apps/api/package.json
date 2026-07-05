@@ -5,6 +5,8 @@
   "type": "module",
   "scripts": {
     "dev": "tsx watch src/index.ts",
+    "prebuild": "npm run build -w @sportsync/shared && npm run build -w @sportsync/sport-rules",
+    "pretypecheck": "npm run build -w @sportsync/shared && npm run build -w @sportsync/sport-rules",
     "build": "tsc",
     "start": "node dist/index.js",
     "typecheck": "tsc --noEmit",
