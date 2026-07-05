@@ -1,0 +1,290 @@
+import { useEffect, useState } from 'react';
+import { useParams, Link } from 'react-router-dom';
+import { api, type PlayerStats } from '@sportsync/api-client';
+import type { Competition, Fixture, Team, LadderEntry, Player, Court } from '@sportsync/shared';
+
+const SCORER_URL = import.meta.env.VITE_SCORER_URL || 'http://localhost:5174';
+
+export function CompetitionDetailPage() {
+  const { competitionId } = useParams<{ competitionId: string }>();
+  const [competition, setCompetition] = useState<Competition | null>(null);
+  const [fixtures, setFixtures] = useState<Fixture[]>([]);
+  const [teams, setTeams] = useState<Team[]>([]);
+  const [courts, setCourts] = useState<Court[]>([]);
+  const [ladder, setLadder] = useState<LadderEntry[]>([]);
+  const [stats, setStats] = useState<PlayerStats[]>([]);
+  const [players, setPlayers] = useState<Player[]>([]);
+  const [tab, setTab] = useState<'fixtures' | 'ladder' | 'stats'>('fixtures');
+
+  const teamMap = Object.fromEntries(teams.map((t) => [t.id, t.name]));
+  const courtMap = Object.fromEntries(courts.map((c) => [c.id, c.name]));
+  const playerMap = Object.fromEntries(players.map((p) => [p.id, p.displayName]));
+  const isGoalSport = competition?.sport === 'indoor-netball' || competition?.sport === 'indoor-football' || competition?.sport === 'basketball' || competition?.sport === 'touch-rugby';
+  const goalStatLabel = competition?.sport === 'basketball' ? 'Points' : competition?.sport === 'touch-rugby' ? 'Tries' : 'Goals';
+
+  const load = async () => {
+    if (!competitionId) return;
+    const comp = await api.competitions.get(competitionId);
+    setCompetition(comp);
+    const [fix, teamList, ladderData, statsData, playerList, courtList] = await Promise.all([
+      api.competitions.fixtures(competitionId),
+      api.teams.list(comp.venueId),
+      api.competitions.ladder(competitionId),
+      api.competitions.stats(competitionId),
+      api.players.list(comp.venueId),
+      api.venues.courts(comp.venueId),
+    ]);
+    setFixtures(fix);
+    setTeams(teamList);
+    setCourts(courtList);
+    setLadder(ladderData);
+    setStats(statsData);
+    setPlayers(playerList);
+  };
+
+  useEffect(() => {
+    load();
+  }, [competitionId]);
+
+  const generateFixtures = async () => {
+    if (!competitionId) return;
+    await api.competitions.generateFixtures(competitionId);
+    load();
+  };
+
+  const scorerUrl = (matchId?: string) => {
+    const token = localStorage.getItem('sportsync-token');
+    const base = matchId ? `${SCORER_URL}/match/${matchId}` : SCORER_URL;
+    return token ? `${base}?token=${encodeURIComponent(token)}` : base;
+  };
+
+  const startMatch = async (fixtureId: string) => {
+    const result = await api.fixtures.start(fixtureId);
+    load();
+    const matchId = (result as { match?: { matchId?: string } }).match?.matchId;
+    window.open(scorerUrl(matchId), '_blank');
+  };
+
+  const updateFixture = async (fixtureId: string, data: { courtId?: string; scheduledAt?: string }) => {
+    await api.fixtures.update(fixtureId, data);
+    load();
+  };
+
+  const formatSchedule = (iso?: string) => {
+    if (!iso) return '—';
+    return new Date(iso).toLocaleString(undefined, {
+      weekday: 'short',
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+    });
+  };
+
+  const downloadFile = async (path: string, filename: string) => {
+    const token = localStorage.getItem('sportsync-token');
+    const res = await fetch(path, { headers: token ? { Authorization: `Bearer ${token}` } : {} });
+    const blob = await res.blob();
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const sendSmsReminder = async (fixtureId: string) => {
+    const useRoster = confirm('Send SMS to all subscribed players on both teams? Click Cancel to enter numbers manually.');
+    try {
+      if (useRoster) {
+        const result = await api.notifications.fixtureReminder(fixtureId, undefined, true);
+        const skipped = result.skipped?.length ? ` Skipped invalid: ${result.skipped.join(', ')}` : '';
+        alert(`Sent ${result.sent} of ${result.recipientCount ?? result.sent} message(s)${result.failed.length ? `. Failed: ${result.failed.join(', ')}` : ''}${skipped}`);
+        return;
+      }
+      const phones = prompt('Enter phone numbers (comma-separated, E.164 format e.g. +6421...):');
+      if (!phones?.trim()) return;
+      const to = phones.split(',').map((p) => p.trim()).filter(Boolean);
+      const result = await api.notifications.fixtureReminder(fixtureId, to);
+      alert(`Sent ${result.sent} message(s)${result.failed.length ? `. Failed: ${result.failed.join(', ')}` : ''}`);
+    } catch (err) {
+      alert(err instanceof Error ? err.message : 'SMS failed');
+    }
+  };
+
+  if (!competition) return <div>Loading...</div>;
+
+  return (
+    <div>
+      <Link to="/competitions" style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>← Competitions</Link>
+      <h1 style={{ fontSize: '1.75rem', margin: '0.5rem 0' }}>{competition.name}</h1>
+      <p style={{ color: 'var(--text-muted)', marginBottom: '1.5rem' }}>
+        {competition.settings.formatKey} · {competition.teamIds.length} teams
+      </p>
+
+      <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1.5rem', flexWrap: 'wrap' }}>
+        <button className={tab === 'fixtures' ? 'primary' : ''} onClick={() => setTab('fixtures')}>Fixtures</button>
+        <button className={tab === 'ladder' ? 'primary' : ''} onClick={() => setTab('ladder')}>Ladder</button>
+        <button className={tab === 'stats' ? 'primary' : ''} onClick={() => setTab('stats')}>Statistics</button>
+        <div style={{ marginLeft: 'auto', display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+          <button onClick={() => downloadFile(api.export.ladderCsv(competition.id), 'ladder.csv')}>Ladder CSV</button>
+          <button onClick={() => downloadFile(api.export.ladderPdf(competition.id), 'ladder.pdf')}>Ladder PDF</button>
+          <button onClick={() => downloadFile(api.export.statsCsv(competition.id), 'stats.csv')}>Stats CSV</button>
+          {fixtures.length === 0 && (
+            <button className="primary" onClick={generateFixtures}>Generate Fixtures</button>
+          )}
+        </div>
+      </div>
+
+      {tab === 'fixtures' && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+          {fixtures.map((f) => (
+            <div key={f.id} className="card" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div>
+                <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Round {f.round}</div>
+                <div style={{ fontWeight: 600 }}>
+                  {teamMap[f.homeTeamId] || f.homeTeamId} vs {teamMap[f.awayTeamId] || f.awayTeamId}
+                </div>
+                <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: '0.25rem' }}>
+                  {formatSchedule(f.scheduledAt)}
+                  {f.courtId ? ` · ${courtMap[f.courtId] || f.courtId}` : ''}
+                </div>
+                {f.status === 'scheduled' && courts.length > 0 && (
+                  <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.5rem', flexWrap: 'wrap' }}>
+                    <select
+                      value={f.courtId || ''}
+                      onChange={(e) => updateFixture(f.id, { courtId: e.target.value || undefined })}
+                      style={{ padding: '0.35rem 0.5rem', borderRadius: 6, border: '1px solid var(--border)', background: 'var(--bg)', color: 'var(--text)', fontSize: '0.8rem' }}
+                    >
+                      <option value="">No court</option>
+                      {courts.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
+                    </select>
+                    <input
+                      type="datetime-local"
+                      value={f.scheduledAt ? f.scheduledAt.slice(0, 16) : ''}
+                      onChange={(e) => updateFixture(f.id, { scheduledAt: e.target.value ? new Date(e.target.value).toISOString() : undefined })}
+                      style={{ padding: '0.35rem 0.5rem', borderRadius: 6, border: '1px solid var(--border)', background: 'var(--bg)', color: 'var(--text)', fontSize: '0.8rem' }}
+                    />
+                  </div>
+                )}
+                {f.status === 'completed' && (
+                  <div style={{ fontSize: '0.85rem', marginTop: '0.25rem' }}>
+                    {isGoalSport
+                      ? `${f.homeScore} – ${f.awayScore}`
+                      : `${f.homeScore}/${f.homeWickets} – ${f.awayScore}/${f.awayWickets}`}
+                  </div>
+                )}
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <span className={`badge ${f.status === 'live' ? 'live' : 'draft'}`}>{f.status}</span>
+                {f.status === 'completed' && f.matchId && (
+                  <button onClick={() => downloadFile(api.export.scorecardPdf(f.matchId!), 'scorecard.pdf')}>PDF</button>
+                )}
+                {f.status === 'scheduled' && (
+                  <>
+                    <button onClick={() => sendSmsReminder(f.id)} title="Send SMS reminder">SMS</button>
+                    <button className="primary" onClick={() => startMatch(f.id)}>Start</button>
+                  </>
+                )}
+                {f.status === 'live' && (
+                  <a href={scorerUrl(f.matchId)} target="_blank" rel="noreferrer">
+                    <button>Score</button>
+                  </a>
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {tab === 'ladder' && (
+        <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+          <thead>
+            <tr style={{ textAlign: 'left', borderBottom: '1px solid var(--border)' }}>
+              <th style={thStyle}>#</th>
+              <th style={thStyle}>Team</th>
+              <th style={thStyle}>P</th>
+              <th style={thStyle}>W</th>
+              <th style={thStyle}>L</th>
+              <th style={thStyle}>Pts</th>
+              <th style={thStyle}>Bonus</th>
+            </tr>
+          </thead>
+          <tbody>
+            {ladder.map((entry) => (
+              <tr key={entry.teamId} style={{ borderBottom: '1px solid var(--border)' }}>
+                <td style={tdStyle}>{entry.position}</td>
+                <td style={tdStyle}>{teamMap[entry.teamId] || entry.teamId}</td>
+                <td style={tdStyle}>{entry.played}</td>
+                <td style={tdStyle}>{entry.won}</td>
+                <td style={tdStyle}>{entry.lost}</td>
+                <td style={tdStyle}>{entry.points}</td>
+                <td style={tdStyle}>{entry.bonusPoints}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      )}
+
+      {tab === 'stats' && (
+        <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
+          <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+            <thead>
+              <tr style={{ borderBottom: '1px solid var(--border)' }}>
+                <th style={thStyle}>Player</th>
+                <th style={thStyle}>M</th>
+                {isGoalSport ? (
+                  <>
+                    <th style={thStyle}>{goalStatLabel}</th>
+                    <th style={thStyle}>Assists</th>
+                  </>
+                ) : (
+                  <>
+                    <th style={thStyle}>Runs</th>
+                    <th style={thStyle}>4s</th>
+                    <th style={thStyle}>6s</th>
+                    <th style={thStyle}>Wkts</th>
+                    <th style={thStyle}>Ct</th>
+                  </>
+                )}
+              </tr>
+            </thead>
+            <tbody>
+              {(isGoalSport
+                ? [...stats].sort((a, b) => b.goals - a.goals)
+                : [...stats].sort((a, b) => b.runs - a.runs)
+              ).map((s) => (
+                <tr key={s.playerId} style={{ borderBottom: '1px solid var(--border)' }}>
+                  <td style={tdStyle}>{playerMap[s.playerId] || s.playerId}</td>
+                  <td style={tdStyle}>{s.matchesPlayed}</td>
+                  {isGoalSport ? (
+                    <>
+                      <td style={tdStyle}>{s.goals}</td>
+                      <td style={tdStyle}>{s.assists}</td>
+                    </>
+                  ) : (
+                    <>
+                      <td style={tdStyle}>{s.runs}</td>
+                      <td style={tdStyle}>{s.fours}</td>
+                      <td style={tdStyle}>{s.sixes}</td>
+                      <td style={tdStyle}>{s.wickets}</td>
+                      <td style={tdStyle}>{s.catches}</td>
+                    </>
+                  )}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          {stats.length === 0 && (
+            <div style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-muted)' }}>
+              Statistics appear after matches are completed.
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+const thStyle: React.CSSProperties = { padding: '0.75rem', color: 'var(--text-muted)', fontSize: '0.8rem' };
+const tdStyle: React.CSSProperties = { padding: '0.75rem' };

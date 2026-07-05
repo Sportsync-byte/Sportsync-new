@@ -1,4 +1,4 @@
-import { recordBall, undoLastBall, createMatch } from './engine.js';
+import { recordBall, undoLastBall, createMatch, setBatters, setBowler } from './engine.js';
 import { INDOOR_CRICKET_FORMATS } from '@sportsync/shared';
 
 describe('indoor cricket scoring engine', () => {
@@ -6,11 +6,9 @@ describe('indoor cricket scoring engine', () => {
 
   function setupMatch() {
     const state = createMatch('m1', 'f1', 'team-home', 'team-away', format);
-    state.innings[0].strikerId = 'batter-1';
-    state.innings[0].nonStrikerId = 'batter-2';
-    state.innings[0].bowlerId = 'bowler-1';
-    state.status = 'innings-1';
-    return state;
+    let updated = setBatters(state, 'batter-1', 'batter-2');
+    updated = setBowler(updated, 'bowler-1');
+    return updated;
   }
 
   it('records runs and advances the over', () => {
@@ -19,7 +17,7 @@ describe('indoor cricket scoring engine', () => {
 
     expect(updated.innings[0].totalRuns).toBe(4);
     expect(updated.innings[0].ballsInOver).toBe(1);
-    expect(updated.innings[0].ballHistory).toHaveLength(1);
+    expect(updated.status).toBe('innings-1');
   });
 
   it('applies dismissal penalty', () => {
@@ -59,5 +57,13 @@ describe('indoor cricket scoring engine', () => {
 
     expect(undone.innings[0].totalRuns).toBe(0);
     expect(undone.innings[0].ballHistory).toHaveLength(0);
+  });
+
+  it('starts innings when bowler is set', () => {
+    const state = createMatch('m1', 'f1', 'team-home', 'team-away', format);
+    const withBatters = setBatters(state, 'b1', 'b2');
+    const withBowler = setBowler(withBatters, 'bowler-1');
+    expect(withBowler.status).toBe('innings-1');
+    expect(withBowler.pendingPrompt).toBeNull();
   });
 });

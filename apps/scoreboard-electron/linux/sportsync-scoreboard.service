@@ -1,0 +1,18 @@
+[Unit]
+Description=SportSync Scoreboard
+After=graphical-session.target network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+Environment=DISPLAY=:0
+Environment=KIOSK=true
+Environment=AUTO_START=false
+# Point at your hosted scoreboard or local static build:
+# Environment=SCOREBOARD_URL=https://scoreboard.example.com/display
+ExecStart=/opt/sportsync/scoreboard-electron/sportsync-scoreboard --no-sandbox
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=graphical-session.target
