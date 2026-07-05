@@ -57,6 +57,7 @@ venuesRouter.post('/', authMiddleware, requireRole('admin', 'owner'), async (req
       id: newId(),
       venueId: id,
       name: `Court ${i + 1}`,
+      number: i + 1,
       displayOrder: i,
     });
   }
@@ -119,13 +120,15 @@ venuesRouter.post('/:venueId/courts', ...manageRoles, async (req: AuthRequest, r
     return;
   }
 
-  const existing = await CourtModel.find({ venueId }).sort({ displayOrder: -1 }).limit(1);
+  const existing = await CourtModel.find({ venueId }).sort({ number: -1 }).limit(1);
   const displayOrder = (existing[0]?.displayOrder ?? -1) + 1;
+  const number = (existing[0]?.number ?? 0) + 1;
 
   const court = await CourtModel.create({
     id: newId(),
     venueId,
     name,
+    number,
     sport,
     displayOrder,
   });

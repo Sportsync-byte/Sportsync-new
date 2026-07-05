@@ -109,6 +109,7 @@ export interface Court {
   id: string;
   venueId: string;
   name: string;
+  number: number;
   sport?: SportId;
   displayOrder: number;
 }

@@ -57,6 +57,7 @@ async function seed() {
       id: newId(),
       venueId,
       name,
+      number: i + 1,
       sport: 'indoor-cricket',
       displayOrder: i,
     }))
