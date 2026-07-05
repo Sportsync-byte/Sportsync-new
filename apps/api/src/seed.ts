@@ -45,7 +45,7 @@ async function seed() {
     productTier: 'stadium',
     branding: { primaryColor: '#00c896', secondaryColor: '#1a2332' },
     courtCount: 4,
-    sports: ['indoor-cricket', 'indoor-netball', 'indoor-football', 'basketball'],
+    sports: ['indoor-cricket', 'indoor-netball', 'indoor-football', 'basketball', 'touch-rugby'],
     licenseKey,
     smsEnabled: true,
     smsAutoRemindersEnabled: true,
@@ -262,6 +262,45 @@ async function seed() {
     }))
   );
   console.log(`Basketball Competition ID: ${basketballCompId}`);
+
+  const rugbyTeams = teams.slice(0, 4);
+  const rugbyCompId = newId();
+  await CompetitionModel.create({
+    id: rugbyCompId,
+    venueId,
+    sport: 'touch-rugby',
+    name: 'Summer Touch Rugby 2026',
+    season: '2026',
+    status: 'active',
+    teamIds: rugbyTeams.map((t) => t.id),
+    settings: {
+      pointsForWin: 4,
+      pointsForTie: 2,
+      pointsForLoss: 0,
+      doubleRoundRobin: false,
+    },
+    ladder: [],
+  });
+
+  const rugbyFixtures = generateRoundRobinFixtures(
+    rugbyTeams.map((t) => t.id),
+    rugbyCompId,
+    'default',
+    {
+      startDate: new Date().toISOString(),
+      daysBetweenRounds: 7,
+      courtIds: courts.map((c) => c.id),
+      slotMinutes: 40,
+    }
+  );
+  await FixtureModel.insertMany(
+    rugbyFixtures.map((f) => ({
+      ...f,
+      id: newId(),
+      venueId,
+    }))
+  );
+  console.log(`Touch Rugby Competition ID: ${rugbyCompId}`);
 
   console.log(`Teams: ${teams.length}, Players: ${players.length}, Fixtures: ${generated.length}`);
 

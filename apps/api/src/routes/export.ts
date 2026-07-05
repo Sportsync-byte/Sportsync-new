@@ -204,7 +204,7 @@ exportRouter.get('/competition/:competitionId/stats.csv', authMiddleware, async 
   const { competition } = access;
 
   const stats = await PlayerStatsModel.find({ competitionId: competition.id });
-  const isGoalSport = ['indoor-netball', 'indoor-football', 'basketball'].includes(competition.sport);
+  const isGoalSport = ['indoor-netball', 'indoor-football', 'basketball', 'touch-rugby'].includes(competition.sport);
   const goalLabel = competition.sport === 'basketball' ? 'Points' : 'Goals';
 
   if (isGoalSport) {

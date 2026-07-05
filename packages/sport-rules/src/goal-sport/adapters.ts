@@ -1,4 +1,4 @@
-import type { NetballMatchState, IndoorFootballMatchState, BasketballMatchState } from '@sportsync/shared';
+import type { NetballMatchState, IndoorFootballMatchState, BasketballMatchState, TouchRugbyMatchState } from '@sportsync/shared';
 import type { GoalSportScoringEvent } from './stats.js';
 
 export function eventsFromNetballState(state: NetballMatchState): GoalSportScoringEvent[] {
@@ -22,5 +22,13 @@ export function eventsFromBasketballState(state: BasketballMatchState): GoalSpor
     scorerId: basket.scorerId,
     assistedById: basket.assistedById,
     weight: basket.points,
+  }));
+}
+
+export function eventsFromTouchRugbyState(state: TouchRugbyMatchState): GoalSportScoringEvent[] {
+  return state.tryHistory.map((tryEvent) => ({
+    scorerId: tryEvent.scorerId,
+    assistedById: tryEvent.assistedById,
+    weight: 1,
   }));
 }

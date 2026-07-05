@@ -1,8 +1,9 @@
-import type { IndoorCricketMatchState, NetballMatchState, IndoorFootballMatchState, BasketballMatchState } from '@sportsync/shared';
+import type { IndoorCricketMatchState, NetballMatchState, IndoorFootballMatchState, BasketballMatchState, TouchRugbyMatchState } from '@sportsync/shared';
 import {
   eventsFromNetballState,
   eventsFromFootballState,
   eventsFromBasketballState,
+  eventsFromTouchRugbyState,
 } from '@sportsync/sport-rules';
 import { getMatchResult } from '@sportsync/sport-rules';
 import { FixtureModel } from '../models/fixture.js';
@@ -100,6 +101,28 @@ export async function completeFixtureFromMatchState(
       await CompetitionModel.updateOne({ id: competition.id }, { ladder });
       await persistGoalSportStats(
         eventsFromBasketballState(basketballState),
+        fixture.venueId,
+        fixture.competitionId
+      );
+    }
+    return fixture;
+  }
+
+  if (sport === 'touch-rugby') {
+    const rugbyState = state as TouchRugbyMatchState;
+    fixture.status = 'completed';
+    fixture.homeScore = rugbyState.homeScore;
+    fixture.awayScore = rugbyState.awayScore;
+    fixture.winnerTeamId = rugbyState.winnerTeamId;
+    await fixture.save();
+
+    const competition = await CompetitionModel.findOne({ id: fixture.competitionId });
+    if (competition) {
+      const fixtures = await FixtureModel.find({ competitionId: competition.id });
+      const ladder = buildLadderFromFixtures(competition, fixtures);
+      await CompetitionModel.updateOne({ id: competition.id }, { ladder });
+      await persistGoalSportStats(
+        eventsFromTouchRugbyState(rugbyState),
         fixture.venueId,
         fixture.competitionId
       );

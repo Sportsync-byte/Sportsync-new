@@ -5,6 +5,7 @@ import { ScoringPage } from './ScoringPage';
 import { NetballScoringPage } from './NetballScoringPage';
 import { FootballScoringPage } from './FootballScoringPage';
 import { BasketballScoringPage } from './BasketballScoringPage';
+import { TouchRugbyScoringPage } from './TouchRugbyScoringPage';
 
 export function MatchRouter() {
   const { matchId } = useParams<{ matchId: string }>();
@@ -22,5 +23,6 @@ export function MatchRouter() {
   if (sport === 'indoor-netball') return <NetballScoringPage />;
   if (sport === 'indoor-football') return <FootballScoringPage />;
   if (sport === 'basketball') return <BasketballScoringPage />;
+  if (sport === 'touch-rugby') return <TouchRugbyScoringPage />;
   return <ScoringPage />;
 }

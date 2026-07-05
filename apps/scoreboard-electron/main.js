@@ -3,6 +3,7 @@ const path = require('path');
 
 const SCOREBOARD_URL = process.env.SCOREBOARD_URL;
 const KIOSK = process.env.KIOSK !== 'false';
+const AUTO_START = process.env.AUTO_START !== 'false';
 const isDev = !app.isPackaged;
 
 const gotLock = app.requestSingleInstanceLock();
@@ -15,6 +16,17 @@ if (!gotLock) {
       if (win.isMinimized()) win.restore();
       win.focus();
     }
+  });
+}
+
+function configureAutoStart() {
+  if (!AUTO_START) return;
+  if (process.platform === 'linux') return;
+
+  app.setLoginItemSettings({
+    openAtLogin: true,
+    openAsHidden: false,
+    args: process.platform === 'win32' ? ['--autostart'] : undefined,
   });
 }
 
@@ -46,6 +58,7 @@ function createWindow() {
 
 if (gotLock) {
   app.whenReady().then(() => {
+    configureAutoStart();
     createWindow();
     app.on('activate', () => {
       if (BrowserWindow.getAllWindows().length === 0) createWindow();

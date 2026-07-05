@@ -3,5 +3,6 @@ export * from './indoor-cricket.js';
 export * from './indoor-netball.js';
 export * from './indoor-football.js';
 export * from './basketball.js';
+export * from './touch-rugby.js';
 export * from './fixtures.js';
 export * from './ladder.js';
