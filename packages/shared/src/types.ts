@@ -274,6 +274,11 @@ export const SOCKET_EVENTS = {
   BASKETBALL_START: 'basketball:start',
   BASKETBALL_END_QUARTER: 'basketball:end-quarter',
   BASKETBALL_TIMER: 'basketball:timer',
+  TOUCH_RUGBY_TRY: 'touch-rugby:try',
+  TOUCH_RUGBY_UNDO: 'touch-rugby:undo',
+  TOUCH_RUGBY_START: 'touch-rugby:start',
+  TOUCH_RUGBY_END_HALF: 'touch-rugby:end-half',
+  TOUCH_RUGBY_TIMER: 'touch-rugby:timer',
   SCOREBOARD_UPDATE: 'scoreboard:update',
   VENUE_LIVE: 'venue:live',
 } as const;

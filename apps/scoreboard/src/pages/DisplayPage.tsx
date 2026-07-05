@@ -1,8 +1,8 @@
 import { useEffect, useState, type ReactNode } from 'react';
 import { io } from 'socket.io-client';
 import { SOCKET_EVENTS } from '@sportsync/shared';
-import type { IndoorCricketMatchState, NetballMatchState, IndoorFootballMatchState, BasketballMatchState } from '@sportsync/shared';
-import { getScoreboardDisplay, getNetballScoreboard, getFootballScoreboard, getBasketballScoreboard } from '@sportsync/sport-rules';
+import type { IndoorCricketMatchState, NetballMatchState, IndoorFootballMatchState, BasketballMatchState, TouchRugbyMatchState } from '@sportsync/shared';
+import { getScoreboardDisplay, getNetballScoreboard, getFootballScoreboard, getBasketballScoreboard, getTouchRugbyScoreboard } from '@sportsync/sport-rules';
 import { api } from '@sportsync/api-client';
 import { scoreboardApi, getDeviceMeta, clearDeviceSession } from '../lib/device';
 import { enterKioskMode, isFullscreen } from '../lib/kiosk';
@@ -88,6 +88,7 @@ export function DisplayPage() {
   if (sport === 'indoor-netball') return <NetballDisplay matchId={matchId} kioskButton={kioskButton} />;
   if (sport === 'indoor-football') return <FootballDisplay matchId={matchId} kioskButton={kioskButton} />;
   if (sport === 'basketball') return <BasketballDisplay matchId={matchId} kioskButton={kioskButton} />;
+  if (sport === 'touch-rugby') return <TouchRugbyDisplay matchId={matchId} kioskButton={kioskButton} />;
   return <CricketDisplay matchId={matchId} kioskButton={kioskButton} />;
 }
 
@@ -250,6 +251,48 @@ function BasketballDisplay({ matchId, kioskButton }: { matchId: string; kioskBut
   return (
     <div style={{ minHeight: '100vh', background: '#0a0e12', color: '#fff', padding: '2rem' }}>
       <div style={{ textAlign: 'center', marginBottom: '1rem', color: '#7d8fa3' }}>BASKETBALL · Q{display.quarter}</div>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr auto 1fr', alignItems: 'center', gap: '2rem' }}>
+        <div style={{ textAlign: 'center' }}>
+          <div>{teamNames[display.homeTeamId] || 'Home'}</div>
+          <div style={{ fontSize: '6rem', fontWeight: 900 }}>{display.homeScore}</div>
+        </div>
+        <div>vs</div>
+        <div style={{ textAlign: 'center' }}>
+          <div>{teamNames[display.awayTeamId] || 'Away'}</div>
+          <div style={{ fontSize: '6rem', fontWeight: 900 }}>{display.awayScore}</div>
+        </div>
+      </div>
+      {kioskButton}
+    </div>
+  );
+}
+
+function TouchRugbyDisplay({ matchId, kioskButton }: { matchId: string; kioskButton: ReactNode }) {
+  const [state, setState] = useState<TouchRugbyMatchState | null>(null);
+  const [teamNames, setTeamNames] = useState<Record<string, string>>({});
+
+  useEffect(() => {
+    let socket: ReturnType<typeof io> | null = null;
+    api.matches.get(matchId).then(async (doc) => {
+      const match = doc as { state: TouchRugbyMatchState; venueId?: string };
+      setState(match.state);
+      if (match.venueId) {
+        const teams = await api.teams.list(match.venueId);
+        setTeamNames(Object.fromEntries(teams.map((t) => [t.id, t.name])));
+      }
+    });
+    socket = io('/', { transports: ['websocket', 'polling'] });
+    socket.on('connect', () => socket!.emit(SOCKET_EVENTS.MATCH_JOIN, matchId));
+    socket.on(SOCKET_EVENTS.MATCH_STATE, (s: TouchRugbyMatchState) => setState(s));
+    return () => { socket?.disconnect(); };
+  }, [matchId]);
+
+  if (!state) return null;
+  const display = getTouchRugbyScoreboard(state);
+
+  return (
+    <div style={{ minHeight: '100vh', background: '#0a0e12', color: '#fff', padding: '2rem' }}>
+      <div style={{ textAlign: 'center', marginBottom: '1rem', color: '#7d8fa3' }}>TOUCH RUGBY · Half {display.half}</div>
       <div style={{ display: 'grid', gridTemplateColumns: '1fr auto 1fr', alignItems: 'center', gap: '2rem' }}>
         <div style={{ textAlign: 'center' }}>
           <div>{teamNames[display.homeTeamId] || 'Home'}</div>

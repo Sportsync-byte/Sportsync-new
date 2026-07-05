@@ -10,4 +10,5 @@ export {
   eventsFromNetballState,
   eventsFromFootballState,
   eventsFromBasketballState,
+  eventsFromTouchRugbyState,
 } from './adapters.js';

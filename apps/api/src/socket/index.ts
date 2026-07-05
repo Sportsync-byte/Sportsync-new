@@ -19,11 +19,10 @@ import type { NetballMatchState } from '@sportsync/shared';
 import { registerNetballHandlers } from './netball.js';
 import { registerFootballHandlers } from './football.js';
 import { registerBasketballHandlers } from './basketball.js';
+import { registerTouchRugbyHandlers } from './touch-rugby.js';
 import { setupSocketAuth, rejectUnauthorizedScore } from '../middleware/socket-auth.js';
-import { getFootballScoreboard } from '@sportsync/sport-rules';
-import type { IndoorFootballMatchState } from '@sportsync/shared';
-import { getBasketballScoreboard } from '@sportsync/sport-rules';
-import type { BasketballMatchState } from '@sportsync/shared';
+import { getFootballScoreboard, getBasketballScoreboard, getTouchRugbyScoreboard } from '@sportsync/sport-rules';
+import type { IndoorFootballMatchState, BasketballMatchState, TouchRugbyMatchState } from '@sportsync/shared';
 
 async function persistCricket(
   io: Server,
@@ -53,6 +52,7 @@ export function setupSocketIO(httpServer: HttpServer, corsOrigin: string | strin
   registerNetballHandlers(io);
   registerFootballHandlers(io);
   registerBasketballHandlers(io);
+  registerTouchRugbyHandlers(io);
 
   io.on('connection', (socket) => {
     socket.on(SOCKET_EVENTS.MATCH_JOIN, async (matchId: string) => {
@@ -67,6 +67,8 @@ export function setupSocketIO(httpServer: HttpServer, corsOrigin: string | strin
         socket.emit(SOCKET_EVENTS.SCOREBOARD_UPDATE, getFootballScoreboard(doc.state as IndoorFootballMatchState));
       } else if (doc.sport === 'basketball') {
         socket.emit(SOCKET_EVENTS.SCOREBOARD_UPDATE, getBasketballScoreboard(doc.state as BasketballMatchState));
+      } else if (doc.sport === 'touch-rugby') {
+        socket.emit(SOCKET_EVENTS.SCOREBOARD_UPDATE, getTouchRugbyScoreboard(doc.state as TouchRugbyMatchState));
       } else {
         socket.emit(SOCKET_EVENTS.SCOREBOARD_UPDATE, getScoreboardDisplay(doc.state as IndoorCricketMatchState));
       }

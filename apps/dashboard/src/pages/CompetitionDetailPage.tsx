@@ -19,8 +19,8 @@ export function CompetitionDetailPage() {
   const teamMap = Object.fromEntries(teams.map((t) => [t.id, t.name]));
   const courtMap = Object.fromEntries(courts.map((c) => [c.id, c.name]));
   const playerMap = Object.fromEntries(players.map((p) => [p.id, p.displayName]));
-  const isGoalSport = competition?.sport === 'indoor-netball' || competition?.sport === 'indoor-football' || competition?.sport === 'basketball';
-  const goalStatLabel = competition?.sport === 'basketball' ? 'Points' : 'Goals';
+  const isGoalSport = competition?.sport === 'indoor-netball' || competition?.sport === 'indoor-football' || competition?.sport === 'basketball' || competition?.sport === 'touch-rugby';
+  const goalStatLabel = competition?.sport === 'basketball' ? 'Points' : competition?.sport === 'touch-rugby' ? 'Tries' : 'Goals';
 
   const load = async () => {
     if (!competitionId) return;

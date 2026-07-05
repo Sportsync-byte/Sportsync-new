@@ -3,7 +3,7 @@ import { api } from '@sportsync/api-client';
 import type { Court } from '@sportsync/shared';
 import { useVenue } from '../context/VenueContext';
 
-const SPORTS = ['indoor-cricket', 'indoor-netball', 'indoor-football', 'basketball'];
+const SPORTS = ['indoor-cricket', 'indoor-netball', 'indoor-football', 'basketball', 'touch-rugby'];
 
 export function CourtsPage() {
   const { venue } = useVenue();

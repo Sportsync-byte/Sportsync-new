@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { INDOOR_CRICKET_FORMATS, createNetballMatch, INDOOR_NETBALL_FORMAT, createFootballMatch, INDOOR_FOOTBALL_FORMAT, createBasketballMatch, BASKETBALL_FORMAT } from '@sportsync/shared';
+import { INDOOR_CRICKET_FORMATS, createNetballMatch, INDOOR_NETBALL_FORMAT, createFootballMatch, INDOOR_FOOTBALL_FORMAT, createBasketballMatch, BASKETBALL_FORMAT, createTouchRugbyMatch, TOUCH_RUGBY_FORMAT } from '@sportsync/shared';
 import { createMatch } from '@sportsync/sport-rules';
 import { CompetitionModel } from '../models/competition.js';
 import { FixtureModel } from '../models/fixture.js';
@@ -94,6 +94,8 @@ fixturesRouter.post('/:fixtureId/start', ...scoreRoles, async (req: AuthRequest,
     state = createFootballMatch(matchId, fixture.id, fixture.homeTeamId, fixture.awayTeamId, INDOOR_FOOTBALL_FORMAT);
   } else if (sport === 'basketball') {
     state = createBasketballMatch(matchId, fixture.id, fixture.homeTeamId, fixture.awayTeamId, BASKETBALL_FORMAT);
+  } else if (sport === 'touch-rugby') {
+    state = createTouchRugbyMatch(matchId, fixture.id, fixture.homeTeamId, fixture.awayTeamId, TOUCH_RUGBY_FORMAT);
   } else {
     sport = 'indoor-cricket';
     const formatKey = competition.settings.formatKey || 'six-aside';
