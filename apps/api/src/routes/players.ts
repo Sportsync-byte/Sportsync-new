@@ -1,0 +1,61 @@
+import { Router } from 'express';
+import { PlayerModel } from '../models/player.js';
+import { newId } from '../utils/id.js';
+
+export const playersRouter = Router();
+
+playersRouter.get('/venue/:venueId', async (req, res) => {
+  const filter: Record<string, unknown> = { venueId: req.params.venueId };
+  if (req.query.teamId) filter.teamIds = req.query.teamId;
+  const players = await PlayerModel.find(filter).sort({ displayName: 1 });
+  res.json(players);
+});
+
+playersRouter.get('/:playerId', async (req, res) => {
+  const player = await PlayerModel.findOne({ id: req.params.playerId });
+  if (!player) {
+    res.status(404).json({ error: 'Player not found' });
+    return;
+  }
+  res.json(player);
+});
+
+playersRouter.post('/', async (req, res) => {
+  const { venueId, firstName, lastName, displayName, teamIds } = req.body;
+  if (!venueId || !firstName || !lastName) {
+    res.status(400).json({ error: 'venueId, firstName, and lastName are required' });
+    return;
+  }
+
+  const player = await PlayerModel.create({
+    id: newId(),
+    venueId,
+    firstName,
+    lastName,
+    displayName: displayName || `${firstName} ${lastName}`,
+    teamIds: teamIds || [],
+  });
+  res.status(201).json(player);
+});
+
+playersRouter.patch('/:playerId', async (req, res) => {
+  const player = await PlayerModel.findOneAndUpdate(
+    { id: req.params.playerId },
+    { $set: req.body },
+    { new: true }
+  );
+  if (!player) {
+    res.status(404).json({ error: 'Player not found' });
+    return;
+  }
+  res.json(player);
+});
+
+playersRouter.delete('/:playerId', async (req, res) => {
+  const result = await PlayerModel.deleteOne({ id: req.params.playerId });
+  if (result.deletedCount === 0) {
+    res.status(404).json({ error: 'Team not found' });
+    return;
+  }
+  res.status(204).send();
+});

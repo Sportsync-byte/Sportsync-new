@@ -2,8 +2,6 @@
 
 All-in-one sports competition management and live scoring platform.
 
-SportSync replaces multiple disconnected systems (competition management, fixtures, live scoreboards, digital scoring, statistics, and club websites) with a single ecosystem built around one platform supporting many sports.
-
 ## Products
 
 | Product | Audience | Key capabilities |
@@ -19,97 +17,89 @@ SportSync replaces multiple disconnected systems (competition management, fixtur
 | **Dashboard** | 5173 | Stadium administrator portal |
 | **Scorer** | 5174 | Tablet-first live scoring app |
 
-The marketing website is planned for Wix; these apps cover the operational platform.
-
 ## Architecture
 
 ```
 sportsync/
 ├── apps/
-│   ├── api/           # Node.js + Express + MongoDB + Socket.IO
-│   ├── dashboard/     # React admin portal (Vite)
-│   └── scorer/        # React scoring app (Vite, tablet-optimised)
+│   ├── api/              # REST API + Socket.IO + MongoDB
+│   ├── dashboard/        # Admin portal (competitions, teams, players, live scores)
+│   └── scorer/           # Live scoring + TV scoreboard display
 └── packages/
-    ├── shared/        # Domain types, socket events, sport IDs
-    └── sport-rules/   # Pluggable scoring engines per sport
+    ├── shared/           # Domain types, fixture generator, ladder calculator
+    ├── sport-rules/      # Indoor cricket scoring engine
+    └── api-client/       # Shared fetch client for frontends
 ```
 
-### Core philosophy
+## End-to-end flow
 
-Every sport shares fixtures, ladders, finals, teams, players, venues, live scoring, and statistics. Only the scoring rules change — making new sports straightforward to add.
-
-Indoor cricket is the first fully modelled sport, including 6-aside, 8-aside, and Asia Cup formats.
-
-## Tech stack
-
-- **Frontend:** React, TypeScript, Vite
-- **Backend:** Node.js, Express
-- **Database:** MongoDB
-- **Real-time:** Socket.IO
+1. **Venue** — Create venue with courts (or run seed for demo data)
+2. **Teams & Players** — Register teams and player rosters
+3. **Competition** — Create competition, assign teams, generate round-robin fixtures
+4. **Start Match** — From dashboard or scorer, start a fixture → creates live match
+5. **Score** — Scorer app: select batters, bowler, record runs/extras/wickets, undo
+6. **Live Updates** — Socket.IO pushes to scoreboard display and live scores page
+7. **Complete** — Match end auto-updates fixture result and recalculates ladder
 
 ## Getting started
 
 ### Prerequisites
 
 - Node.js 20+
-- MongoDB (local or Atlas)
+- MongoDB
 
-### Install
+### Install & seed
 
 ```bash
 npm install
-```
-
-### Build shared packages
-
-```bash
 npm run build -w @sportsync/shared
 npm run build -w @sportsync/sport-rules
-```
-
-### Run development servers
-
-```bash
-# Terminal 1 — API (requires MongoDB)
+npm run build -w @sportsync/api-client
 cp apps/api/.env.example apps/api/.env
-npm run dev:api
-
-# Terminal 2 — Dashboard
-npm run dev:dashboard
-
-# Terminal 3 — Scorer
-npm run dev:scorer
+npm run seed          # Creates demo venue, 6 teams, competition, fixtures
 ```
 
-### Run tests
+### Run
 
 ```bash
-npm test -w @sportsync/sport-rules
+npm run dev:api         # Terminal 1
+npm run dev:dashboard   # Terminal 2 — http://localhost:5173
+npm run dev:scorer      # Terminal 3 — http://localhost:5174
 ```
 
-## Indoor cricket scoring
+### Test the flow
 
-The `@sportsync/sport-rules` package implements the indoor cricket engine:
+1. Open dashboard → select "Action Indoor Sports Christchurch"
+2. Go to Competitions → open "Summer Indoor Cricket 2026"
+3. Click **Generate Fixtures** (if not already generated)
+4. Click **Start** on any fixture → opens scorer
+5. Select batters and bowler, then score the game
+6. Open `/display/{matchId}` for TV scoreboard view
+7. Check Live Scores page and Ladder tab after match completes
 
-- Run values 0–7, extras (wide, no-ball, leg side wide, byes, leg byes)
-- Automatic -5 penalty on dismissals (team and batter)
-- Strike rotation with manual override
-- Undo last ball
-- Scoreboard display state for live TVs
+## Features implemented
 
-Socket events (`match:ball`, `match:undo`, `scoreboard:update`) propagate changes instantly to connected scorers and scoreboards.
+- Venue, court, team, player, competition, fixture CRUD
+- Round-robin fixture generation (single and double)
+- Automatic ladder with bonus points
+- Indoor cricket scoring: 6s/8s/Asia Cup formats
+- Runs 0–7, extras, dismissals (-5), strike rotation, undo
+- Partnership and bowler selection prompts
+- Innings transitions and match completion
+- Real-time Socket.IO updates
+- Offline ball queue with sync on reconnect
+- Public live scores search (no login)
+- TV scoreboard display mode
 
 ## Roadmap
 
-- [ ] Competition, division, and fixture CRUD
-- [ ] Player and team management
-- [ ] Automatic ladder and standings
-- [ ] Offline scoring with sync queue
-- [ ] Remote scoreboard display mode
-- [ ] Venue branding and sponsor banners
+- [ ] Authentication and role-based access
+- [ ] Venue branding on scoreboards
+- [ ] Timer with automatic siren
+- [ ] Player statistics aggregation
+- [ ] Additional sports (netball, basketball, football)
 - [ ] Subscription tiers (Club / Stadium)
-- [ ] Additional sports (netball, basketball, football, rugby)
-- [ ] Live streaming score overlay integration
+- [ ] PDF/CSV export
 
 ## License
 

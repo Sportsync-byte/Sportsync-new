@@ -3,7 +3,13 @@ import cors from 'cors';
 import express from 'express';
 import { createServer } from 'node:http';
 import { connectDatabase } from './config/database.js';
+import { venuesRouter } from './routes/venues.js';
+import { teamsRouter } from './routes/teams.js';
+import { playersRouter } from './routes/players.js';
+import { competitionsRouter } from './routes/competitions.js';
+import { fixturesRouter } from './routes/fixtures.js';
 import { matchesRouter } from './routes/matches.js';
+import { liveRouter } from './routes/live.js';
 import { setupSocketIO } from './socket/index.js';
 
 const PORT = Number(process.env.PORT) || 3001;
@@ -23,7 +29,13 @@ app.get('/health', (_req, res) => {
   res.json({ status: 'ok', service: 'sportsync-api' });
 });
 
+app.use('/api/venues', venuesRouter);
+app.use('/api/teams', teamsRouter);
+app.use('/api/players', playersRouter);
+app.use('/api/competitions', competitionsRouter);
+app.use('/api/fixtures', fixturesRouter);
 app.use('/api/matches', matchesRouter);
+app.use('/api/live', liveRouter);
 
 setupSocketIO(httpServer, CORS_ORIGIN);
 

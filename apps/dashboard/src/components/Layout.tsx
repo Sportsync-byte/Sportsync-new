@@ -1,13 +1,18 @@
 import { NavLink } from 'react-router-dom';
 import type { ReactNode } from 'react';
+import { useVenue } from '../context/VenueContext';
 
 const navItems = [
   { to: '/', label: 'Overview' },
   { to: '/competitions', label: 'Competitions' },
+  { to: '/teams', label: 'Teams' },
+  { to: '/players', label: 'Players' },
   { to: '/live', label: 'Live Scores' },
 ];
 
 export function Layout({ children }: { children: ReactNode }) {
+  const { venue, venues, setVenueId, loading } = useVenue();
+
   return (
     <div style={{ display: 'flex', minHeight: '100vh' }}>
       <aside
@@ -18,13 +23,36 @@ export function Layout({ children }: { children: ReactNode }) {
           padding: '1.5rem 1rem',
           display: 'flex',
           flexDirection: 'column',
-          gap: '2rem',
+          gap: '1.5rem',
         }}
       >
         <div>
           <div style={{ fontSize: '1.25rem', fontWeight: 700 }}>SportSync</div>
           <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Stadium Dashboard</div>
         </div>
+
+        {!loading && venues.length > 0 && (
+          <select
+            value={venue?.id || ''}
+            onChange={(e) => setVenueId(e.target.value)}
+            style={{
+              width: '100%',
+              padding: '0.5rem',
+              borderRadius: 8,
+              border: '1px solid var(--border)',
+              background: 'var(--bg)',
+              color: 'var(--text)',
+              fontSize: '0.85rem',
+            }}
+          >
+            {venues.map((v) => (
+              <option key={v.id} value={v.id}>
+                {v.name}
+              </option>
+            ))}
+          </select>
+        )}
+
         <nav style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
           {navItems.map((item) => (
             <NavLink
@@ -43,6 +71,24 @@ export function Layout({ children }: { children: ReactNode }) {
             </NavLink>
           ))}
         </nav>
+
+        <a
+          href="http://localhost:5174"
+          target="_blank"
+          rel="noreferrer"
+          style={{
+            marginTop: 'auto',
+            padding: '0.6rem 0.75rem',
+            borderRadius: 8,
+            background: 'var(--accent)',
+            color: '#0a0f14',
+            fontWeight: 600,
+            textAlign: 'center',
+            fontSize: '0.9rem',
+          }}
+        >
+          Open Scorer App
+        </a>
       </aside>
       <main style={{ flex: 1, padding: '2rem', overflow: 'auto' }}>{children}</main>
     </div>

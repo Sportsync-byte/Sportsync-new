@@ -111,6 +111,10 @@ export interface IndoorCricketMatchState {
   battingTeamIndex: 0 | 1;
   status: 'not-started' | 'innings-1' | 'innings-2' | 'completed';
   winnerTeamId?: string;
+  /** Players who have been dismissed this innings */
+  dismissedBatters: string[];
+  /** Prompt state for scorer UI */
+  pendingPrompt?: 'batters' | 'bowler' | 'partnership' | 'innings-break' | null;
 }
 
 export const DISMISSAL_PENALTY = {

@@ -70,6 +70,15 @@ export interface Player {
   teamIds: string[];
 }
 
+export interface CompetitionSettings {
+  formatKey?: 'six-aside' | 'eight-aside' | 'asia-cup';
+  pointsForWin: number;
+  pointsForTie: number;
+  pointsForLoss: number;
+  bonusPointThreshold?: number;
+  doubleRoundRobin: boolean;
+}
+
 export interface Competition {
   id: string;
   venueId: string;
@@ -77,7 +86,10 @@ export interface Competition {
   name: string;
   season: string;
   status: 'draft' | 'active' | 'completed';
+  teamIds: string[];
+  settings: CompetitionSettings;
   divisions: Division[];
+  ladder: LadderEntry[];
 }
 
 export interface Division {
@@ -104,6 +116,31 @@ export interface Fixture {
   scheduledAt?: string;
   status: 'scheduled' | 'live' | 'completed' | 'abandoned';
   matchId?: string;
+  homeScore?: number;
+  awayScore?: number;
+  homeWickets?: number;
+  awayWickets?: number;
+  winnerTeamId?: string;
+}
+
+export interface LiveMatchSummary {
+  matchId: string;
+  fixtureId: string;
+  venueId: string;
+  competitionId: string;
+  competitionName?: string;
+  courtName?: string;
+  homeTeamId: string;
+  homeTeamName?: string;
+  awayTeamId: string;
+  awayTeamName?: string;
+  homeScore: number;
+  awayScore: number;
+  homeWickets: number;
+  awayWickets: number;
+  status: string;
+  over?: number;
+  ball?: number;
 }
 
 export interface LadderEntry {
@@ -132,7 +169,9 @@ export const SOCKET_EVENTS = {
   MATCH_BALL: 'match:ball',
   MATCH_UNDO: 'match:undo',
   MATCH_TIMER: 'match:timer',
+  MATCH_SETUP: 'match:setup',
   SCOREBOARD_UPDATE: 'scoreboard:update',
+  VENUE_LIVE: 'venue:live',
 } as const;
 
 export type SocketEvent = (typeof SOCKET_EVENTS)[keyof typeof SOCKET_EVENTS];
